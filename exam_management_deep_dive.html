@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exam Management — Deep Dive · Insight Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg:#0f0f11; --bg2:#16161a; --bg3:#1e1e24; --bg4:#26262e; --bg5:#2e2e38;
+  --border:rgba(255,255,255,0.06); --border2:rgba(255,255,255,0.11); --border3:rgba(255,255,255,0.18);
+  --text:#e8e6df; --text2:#9a9690; --text3:#5c5a57; --text4:#3a3a3a;
+  --accent:#8b7ff5; --accent2:#6c62d4; --accent3:#b5aeff;
+  --teal:#2ec4a0; --teal2:#1a9e82; --teal-bg:rgba(46,196,160,0.08);
+  --amber:#f5a623; --amber2:#d4881a; --amber-bg:rgba(245,166,35,0.08);
+  --coral:#e8604a; --coral2:#c44530; --coral-bg:rgba(232,96,74,0.08);
+  --green:#4caf7d; --green-bg:rgba(76,175,125,0.08);
+  --blue:#78aaf5; --blue-bg:rgba(120,170,245,0.08);
+  --pink:#e87ab5; --pink-bg:rgba(232,122,181,0.08);
+  --font-d:'DM Serif Display',serif; --font-b:'Instrument Sans',sans-serif; --font-m:'DM Mono',monospace;
+  --r:8px; --rl:12px; --rxl:16px; --sw:240px; --th:52px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:var(--font-b);background:var(--bg);color:var(--text);font-size:13px;line-height:1.5}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
+button{font-family:var(--font-b);cursor:pointer;border:none;outline:none}
+
+/* ─ Shell ─ */
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* ─ Sidebar ─ */
+.sb{width:var(--sw);min-width:var(--sw);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+.sb-logo{padding:16px 14px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--border)}
+.sb-mark{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--accent),var(--teal));display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:600}
+.sb-title{font-family:var(--font-d);font-size:14px;color:var(--text)}
+.sb-sub{font-size:9px;color:var(--text3);font-family:var(--font-m)}
+.sb-sec{padding:14px 12px 3px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);font-weight:600}
+.ni{display:flex;align-items:center;gap:7px;padding:6px 10px;margin:1px 5px;border-radius:6px;cursor:pointer;color:var(--text2);font-size:12px;transition:all .12s;position:relative}
+.ni:hover{background:var(--bg3);color:var(--text)}
+.ni.active{background:rgba(139,127,245,.1);color:var(--accent)}
+.ni.active::before{content:'';position:absolute;left:-5px;top:50%;transform:translateY(-50%);width:3px;height:14px;border-radius:2px;background:var(--accent)}
+.ni svg{width:13px;height:13px;opacity:.6;flex-shrink:0}
+.ni.active svg{opacity:1}
+.nb{margin-left:auto;font-size:9px;padding:2px 5px;border-radius:8px;font-family:var(--font-m);font-weight:500}
+.nb-g{background:var(--green-bg);color:var(--green)}
+.nb-a{background:var(--amber-bg);color:var(--amber)}
+.nb-c{background:var(--coral-bg);color:var(--coral)}
+.nb-p{background:rgba(139,127,245,.12);color:var(--accent)}
+.nb-t{background:var(--teal-bg);color:var(--teal)}
+.sb-bottom{margin-top:auto;padding:10px 8px;border-top:1px solid var(--border)}
+.ua{display:flex;align-items:center;gap:7px}
+.uav{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--teal));display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:#fff}
+.uname{font-size:11px;font-weight:500;color:var(--text)}
+.urole{font-size:9px;color:var(--text3)}
+
+/* ─ Main ─ */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:var(--th);background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0}
+.bc{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px}
+.bc span{color:var(--text);font-weight:500;font-size:12px}
+.bc-sep{color:var(--text4)}
+.tbr{display:flex;gap:5px;align-items:center}
+.tbb{padding:5px 11px;border-radius:6px;font-size:11px;font-weight:500;background:var(--bg3);color:var(--text2);border:1px solid var(--border);transition:all .12s}
+.tbb:hover{background:var(--bg4);color:var(--text)}
+.tbb.p{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tbb.p:hover{background:var(--accent2)}
+.src-tag{font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(139,127,245,.12);color:var(--accent);font-family:var(--font-m)}
+
+.content{flex:1;overflow-y:auto;padding:0}
+.view{display:none;padding:20px 22px}
+.view.active{display:block;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─ Typography ─ */
+.page-title{font-family:var(--font-d);font-size:24px;color:var(--text);letter-spacing:-.02em;margin-bottom:3px}
+.page-sub{font-size:11px;color:var(--text3);margin-bottom:20px}
+.sec-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:12px}
+.card-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.card-sub{font-size:9px;color:var(--text3);text-transform:none;letter-spacing:0;font-weight:400}
+
+/* ─ Cards ─ */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;transition:border-color .15s}
+.card:hover{border-color:var(--border2)}
+.card-flat{background:var(--bg3);border-radius:var(--r);padding:12px 14px}
+
+/* ─ Grid ─ */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.gw{display:grid;grid-template-columns:1.5fr 1fr;gap:12px;margin-bottom:12px}
+.gww{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px}
+
+/* ─ Metric cards ─ */
+.mc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 15px;transition:border-color .15s}
+.mc:hover{border-color:var(--border2)}
+.ml{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.mv{font-size:26px;font-weight:600;color:var(--text);font-family:var(--font-m);line-height:1}
+.md{font-size:10px;margin-top:4px}
+.du{color:var(--green)}.dd{color:var(--coral)}.dn{color:var(--text3)}
+
+/* ─ Tags ─ */
+.tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:500}
+.t-acc{background:rgba(139,127,245,.13);color:var(--accent)}
+.t-gap{background:var(--coral-bg);color:var(--coral)}
+.t-opp{background:var(--teal-bg);color:var(--teal)}
+.t-per{background:var(--blue-bg);color:var(--blue)}
+.t-ai{background:var(--green-bg);color:var(--green)}
+.t-new{background:var(--amber-bg);color:var(--amber)}
+.t-warn{background:rgba(245,166,35,.15);color:var(--amber)}
+
+/* ─ Insight rows ─ */
+.ins{padding:10px 0;border-bottom:1px solid var(--border)}
+.ins:last-child{border-bottom:none}
+.ins-meta{display:flex;align-items:center;gap:5px;margin-bottom:4px;flex-wrap:wrap}
+.ins-text{font-size:12px;color:var(--text2);line-height:1.55}
+.ins-src{font-size:9px;color:var(--text3);margin-top:3px;font-family:var(--font-m)}
+
+/* ─ Chart containers ─ */
+.ch{position:relative;width:100%}
+.ch160{height:160px}.ch180{height:180px}.ch200{height:200px}.ch240{height:240px}.ch280{height:280px}.ch320{height:320px}
+
+/* ─ Sev pills ─ */
+.sp{display:inline-flex;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:500}
+.sp-c{background:var(--coral-bg);color:var(--coral)}
+.sp-h{background:var(--amber-bg);color:var(--amber)}
+.sp-m{background:var(--green-bg);color:var(--green)}
+.sp-n{background:var(--bg3);color:var(--text3)}
+
+/* ─ Progress bars ─ */
+.pbr{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.pbr:last-child{border-bottom:none}
+.pbl{font-size:11px;color:var(--text2);flex:1;min-width:0}
+.pbw{width:100px;height:5px;background:var(--bg4);border-radius:3px;overflow:hidden;flex-shrink:0}
+.pbb{height:100%;border-radius:3px}
+.pbv{font-size:11px;font-weight:500;color:var(--text);font-family:var(--font-m);min-width:32px;text-align:right}
+.pbsub{font-size:9px;color:var(--text3);margin-top:1px}
+
+/* ─ Timeline ─ */
+.tl{padding:10px 0;border-bottom:1px solid var(--border);display:flex;gap:12px}
+.tl:last-child{border-bottom:none}
+.tldot{width:8px;height:8px;border-radius:50%;margin-top:3px;flex-shrink:0}
+.tltitle{font-size:12px;font-weight:500;color:var(--text)}
+.tldate{font-size:9px;color:var(--text3);font-family:var(--font-m);margin-top:1px}
+.tldesc{font-size:11px;color:var(--text3);margin-top:2px;line-height:1.4}
+
+/* ─ Tables ─ */
+.tbl{width:100%;border-collapse:collapse;font-size:11px}
+.tbl th{padding:7px 10px;font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);border-bottom:1px solid var(--border);font-weight:600;text-align:left;background:var(--bg3)}
+.tbl td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top;line-height:1.4}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(255,255,255,.015)}
+.tbl-scroll{overflow-x:auto}
+
+/* ─ AI strip ─ */
+.ai-strip{background:rgba(139,127,245,.06);border:1px solid rgba(139,127,245,.2);border-radius:var(--r);padding:12px 14px;display:flex;gap:10px;margin-bottom:16px;align-items:flex-start}
+.ai-icon{width:26px;height:26px;border-radius:6px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.ai-body{font-size:11px;color:var(--text2);line-height:1.55;flex:1}
+.ai-body strong{color:var(--accent);font-weight:500}
+
+/* ─ Feature boxes ─ */
+.fb{padding:12px 13px;border-radius:var(--r);border:1px solid var(--border);transition:border-color .15s}
+.fb:hover{border-color:var(--border2)}
+.fb-title{font-size:11px;font-weight:600;margin-bottom:3px}
+.fb-desc{font-size:10px;color:var(--text3);line-height:1.45}
+.fb-accent{border-color:rgba(139,127,245,.18);background:rgba(139,127,245,.04)}.fb-accent .fb-title{color:var(--accent)}
+.fb-teal{border-color:rgba(46,196,160,.18);background:rgba(46,196,160,.04)}.fb-teal .fb-title{color:var(--teal)}
+.fb-amber{border-color:rgba(245,166,35,.18);background:rgba(245,166,35,.04)}.fb-amber .fb-title{color:var(--amber)}
+.fb-coral{border-color:rgba(232,96,74,.18);background:rgba(232,96,74,.04)}.fb-coral .fb-title{color:var(--coral)}
+.fb-blue{border-color:rgba(120,170,245,.18);background:rgba(120,170,245,.04)}.fb-blue .fb-title{color:var(--blue)}
+.fb-green{border-color:rgba(76,175,125,.18);background:rgba(76,175,125,.04)}.fb-green .fb-title{color:var(--green)}
+.fb-pink{border-color:rgba(232,122,181,.18);background:rgba(232,122,181,.04)}.fb-pink .fb-title{color:var(--pink)}
+
+/* ─ Pills row ─ */
+.pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.pill{padding:3px 9px;border-radius:20px;font-size:10px;border:1px solid var(--border);color:var(--text3);background:var(--bg3)}
+
+/* ─ Tooltip badge ─ */
+.why{display:inline-flex;align-items:center;gap:3px;font-size:9px;padding:2px 6px;border-radius:3px;background:rgba(139,127,245,.1);color:var(--accent);margin-left:6px;cursor:help}
+
+/* ─ Node/flow styles ─ */
+.flow-wrap{overflow-x:auto;padding-bottom:6px}
+
+/* ─ Comparison bar ─ */
+.cmp-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.cmp-row:last-child{border-bottom:none}
+.cmp-label{font-size:11px;color:var(--text2);width:130px;flex-shrink:0}
+.cmp-exxat{flex:1;height:20px;border-radius:4px;background:rgba(139,127,245,.7);display:flex;align-items:center;padding:0 7px;font-size:9px;color:#fff;font-weight:500;transition:width .5s}
+.cmp-examsoft{flex:1;height:20px;border-radius:4px;background:rgba(232,96,74,.5);display:flex;align-items:center;padding:0 7px;font-size:9px;color:#fff;font-weight:500}
+.cmp-gap{width:6px;flex-shrink:0}
+
+/* ─ Divider ─ */
+.div{height:1px;background:var(--border);margin:14px 0}
+
+/* ─ Score badge ─ */
+.score-badge{font-family:var(--font-m);font-size:20px;font-weight:500}
+
+/* ─ Heatmap ─ */
+.hmap{display:grid;gap:3px}
+.hmap-cell{height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;transition:transform .1s}
+.hmap-cell:hover{transform:scale(1.04)}
+
+/* ─ Node tree item ─ */
+.tree-node{padding:6px 10px;border-radius:6px;border:1px solid var(--border);font-size:11px;color:var(--text2);cursor:default;transition:border-color .12s}
+.tree-node:hover{border-color:var(--border2);color:var(--text)}
+.tree-connector{color:var(--text4);font-size:10px;padding:2px 0;display:flex;align-items:center;gap:4px}
+
+/* ─ Status dot ─ */
+.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;display:inline-block}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ═══ SIDEBAR ═══ -->
+<div class="sb">
+  <div class="sb-logo">
+    <div class="sb-mark">✦</div>
+    <div>
+      <div class="sb-title">Exam Management</div>
+      <div class="sb-sub">Deep Dive · Mar 2026</div>
+    </div>
+  </div>
+
+  <div class="sb-sec">Overview</div>
+  <div class="ni active" onclick="nav('overview',this)">
+    <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/></svg>
+    Product Overview
+  </div>
+
+  <div class="sb-sec">User Flows</div>
+  <div class="ni" onclick="nav('flow-student',this)">
+    <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Student Exam Flow
+    <span class="nb nb-g">V0</span>
+  </div>
+  <div class="ni" onclick="nav('flow-faculty',this)">
+    <svg viewBox="0 0 16 16" fill="none"><path d="M3 2h10a1 1 0 011 1v10a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.2"/><path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Faculty Q-Bank Flow
+  </div>
+  <div class="ni" onclick="nav('flow-admin',this)">
+    <svg viewBox="0 0 16 16" fill="none"><path d="M8 2l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+    Admin Assessment Flow
+  </div>
+
+  <div class="sb-sec">Feature Maps</div>
+  <div class="ni" onclick="nav('feat-qbank',this)">
+    <svg viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 7h9M2 10h6M2 13h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Question Bank
+  </div>
+  <div class="ni" onclick="nav('feat-access',this)">
+    <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Accessibility
+    <span class="nb nb-c">Critical</span>
+  </div>
+  <div class="ni" onclick="nav('feat-ai',this)">
+    <svg viewBox="0 0 16 16" fill="none"><path d="M8 2c3.3 0 6 2.7 6 6s-2.7 6-6 6-6-2.7-6-6 2.7-6 6-6z" stroke="currentColor" stroke-width="1.2"/><path d="M5 8h6M8 5v6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    AI Feature Layer
+    <span class="nb nb-t">New</span>
+  </div>
+
+  <div class="sb-sec">Analytics</div>
+  <div class="ni" onclick="nav('analytics-perf',this)">
+    <svg viewBox="0 0 16 16" fill="none"><path d="M2 12L5 9l3 3 4-5 2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Student Performance
+  </div>
+  <div class="ni" onclick="nav('analytics-item',this)">
+    <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="9" width="3" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="6.5" y="6" width="3" height="8" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="11" y="3" width="3" height="11" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>
+    Item Analytics
+  </div>
+  <div class="ni" onclick="nav('analytics-bloom',this)">
+    <svg viewBox="0 0 16 16" fill="none"><path d="M8 14c-4 0-6-2.7-6-6s2.7-6 6-6 6 2.7 6 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M8 8l2-3M8 8l-2-3M8 8v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Bloom's Distribution
+  </div>
+  <div class="ni" onclick="nav('analytics-pance',this)">
+    <svg viewBox="0 0 16 16" fill="none"><path d="M2 14c0-2.2 1.8-4 4-4h4c2.2 0 4 1.8 4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="6" r="3" stroke="currentColor" stroke-width="1.2"/></svg>
+    PANCE/EOR Dashboard
+  </div>
+
+  <div class="sb-sec">Strategy</div>
+  <div class="ni" onclick="nav('competitive',this)">
+    <svg viewBox="0 0 16 16" fill="none"><path d="M8 2l1.5 4.5H14l-3.7 2.7 1.4 4.4L8 11.3l-3.7 2.8 1.4-4.4L2 7h4.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+    Competitive Analysis
+  </div>
+  <div class="ni" onclick="nav('roadmap',this)">
+    <svg viewBox="0 0 16 16" fill="none"><path d="M2 8h12M8 3l5 5-5 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Roadmap
+  </div>
+  <div class="ni" onclick="nav('design-decisions',this)">
+    <svg viewBox="0 0 16 16" fill="none"><path d="M4 12l8-8M9 4l3 3-4 4-3-3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Design Decisions
+  </div>
+
+  <div class="sb-bottom">
+    <div class="ua">
+      <div class="uav">RS</div>
+      <div><div class="uname">Romit Soley</div><div class="urole">Designer II · Exxat</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MAIN ═══ -->
+<div class="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="bc">Insight Hub <span class="bc-sep">›</span> <span id="ptitle">Product Overview</span></div>
+      <span class="src-tag" id="ptag">Granola · 9 sessions</span>
+    </div>
+    <div class="tbr">
+      <button class="tbb" onclick="nav('analytics-pance',null)">PANCE Dashboard</button>
+      <button class="tbb" onclick="nav('competitive',null)">Competitive Analysis</button>
+      <button class="tbb p" onclick="nav('roadmap',null)">Roadmap ↗</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+<!-- ══════════════════ OVERVIEW ══════════════════ -->
+<div class="view active" id="v-overview">
+  <div class="page-title">Exam Management</div>
+  <div class="page-sub">ExamSoft competitor · Canvas-level UX · React front-end confirmed · AI-first roadmap · Updated from 9 Granola sessions</div>
+
+  <div class="ai-strip">
+    <div class="ai-icon">✦</div>
+    <div class="ai-body"><strong>Granola synthesis complete.</strong> 9 meetings ingested: Exam stand-up (Mar 19) · PA Dashboard (Mar 17) · Accessibility (Mar 16) · Q-Bank multi-campus (Mar 12) · Touro ExamSoft (Mar 11) · Nipun roadmap (Mar 11) · D2L BrightSpace demo (Mar 4) · Platform strategy (Mar 4) · PRISM Day 2 (Mar 3). All data below is sourced and tagged.</div>
+  </div>
+
+  <div class="g4">
+    <div class="mc"><div class="ml">Product status</div><div class="mv" style="font-size:18px;color:var(--green)">Active</div><div class="md du">ExamSoft competitor track</div></div>
+    <div class="mc"><div class="ml">UNF pilot</div><div class="mv" style="font-size:18px;color:var(--amber)">Jul '26</div><div class="md dn">Accessibility = critical blocker</div></div>
+    <div class="mc"><div class="ml">April 17 demo</div><div class="mv" style="font-size:18px;color:var(--accent)">29 days</div><div class="md dn">Student + admin + faculty</div></div>
+    <div class="mc"><div class="ml">ExamSoft launch</div><div class="mv" style="font-size:18px;color:var(--coral)">Nov–Dec</div><div class="md dd">Must include AI to compete</div></div>
+  </div>
+
+  <div class="gw">
+    <div class="card">
+      <div class="card-title">Key design imperatives from Granola <span class="card-sub">Ranked by urgency</span></div>
+      <div class="ins">
+        <div class="ins-meta"><span class="tag t-gap">Critical gap</span><span class="tag t-per">Student</span></div>
+        <div class="ins-text">Accessibility V1 is the hard blocker for UNF pilot. Magnification, high contrast, on-screen keyboard, keyboard-only navigation, extra time accommodations — all absent. Must follow Pearson Education model (GRE/SAT/TOEFL): platform-embedded, no 3rd-party tools.</div>
+        <div class="ins-src">Accessibility session · Mar 16 · Romit&lt;&gt;Nipun · Mar 11</div>
+      </div>
+      <div class="ins">
+        <div class="ins-meta"><span class="tag t-gap">Critical gap</span><span class="tag t-per">Faculty</span></div>
+        <div class="ins-text">Multi-campus exam sharing is Touro's #1 stated pain. Faculty print questions → email → re-upload per campus. EKG/complex images via Box. California campus = different ExamSoft version entirely. Exxat's flat tagging architecture directly solves this.</div>
+        <div class="ins-src">Touro ExamSoft meeting · Mar 11 · Q-Bank multi-campus · Mar 12</div>
+      </div>
+      <div class="ins">
+        <div class="ins-meta"><span class="tag t-new">Architecture</span></div>
+        <div class="ins-text">Moved away from rigid folder hierarchy to flat tagging system. Questions in universal repository. Smart Views auto-populate based on criteria. ~20 tags per question. Two Smart View modes: always-updated vs. fixed snapshots for audit trail.</div>
+        <div class="ins-src">Q-Bank architecture · Mar 12 · Platform strategy · Mar 4</div>
+      </div>
+      <div class="ins">
+        <div class="ins-meta"><span class="tag t-opp">Opportunity</span><span class="tag t-ai">AI</span></div>
+        <div class="ins-text">Blueprint-based question assembly: AI picks questions satisfying all NCCPA blueprint cells. Touro called it a "lifesaver." Also: AI Bloom's tagging on import, AI remediation personalizer (30-question PDFs in PAEA format per student weakness).</div>
+        <div class="ins-src">Touro ExamSoft meeting · Mar 11 private notes</div>
+      </div>
+      <div class="ins">
+        <div class="ins-meta"><span class="tag t-new">Competitive</span></div>
+        <div class="ins-text">D2L BrightSpace demo revealed: LMS systems now encroaching on exam management. Key gap Exxat must fill vs D2L: bulk accommodation assignment (D2L requires individual setup per student per quiz), clinical education differentiation, AI-driven analytics.</div>
+        <div class="ins-src">D2L BrightSpace demo · Mar 4</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="card">
+        <div class="card-title">Persona readiness <span class="why">why: tracks which personas have designed flows vs gaps</span></div>
+        <div class="pbr"><div style="display:flex;flex-direction:column;flex:1"><div class="pbl">Student (test-taker)</div><div class="pbsub">V0 nearly ready</div></div><div class="pbw"><div class="pbb" style="width:62%;background:var(--teal)"></div></div><div class="pbv">62%</div></div>
+        <div class="pbr"><div style="display:flex;flex-direction:column;flex:1"><div class="pbl">Faculty (Q-author)</div><div class="pbsub">Architecture in progress</div></div><div class="pbw"><div class="pbb" style="width:38%;background:var(--amber)"></div></div><div class="pbv">38%</div></div>
+        <div class="pbr"><div style="display:flex;flex-direction:column;flex:1"><div class="pbl">Admin (assessment config)</div><div class="pbsub">Distribution screen in dev</div></div><div class="pbw"><div class="pbb" style="width:28%;background:var(--amber)"></div></div><div class="pbv">28%</div></div>
+        <div class="pbr"><div style="display:flex;flex-direction:column;flex:1"><div class="pbl">Program Director</div><div class="pbsub">Dashboard scoped — PA</div></div><div class="pbw"><div class="pbb" style="width:15%;background:var(--coral)"></div></div><div class="pbv">15%</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Feature delivery status <span class="why">why: shows sprint readiness for April 17 demo</span></div>
+        <div class="pbr"><div class="pbl">Student exam interface</div><div class="pbw"><div class="pbb" style="width:75%;background:var(--teal)"></div></div><div class="pbv">75%</div></div>
+        <div class="pbr"><div class="pbl">Calculator (sci + simple)</div><div class="pbw"><div class="pbb" style="width:100%;background:var(--green)"></div></div><div class="pbv">Done</div></div>
+        <div class="pbr"><div class="pbl">Accessibility V1</div><div class="pbw"><div class="pbb" style="width:30%;background:var(--coral)"></div></div><div class="pbv">30%</div></div>
+        <div class="pbr"><div class="pbl">Admin distribution screen</div><div class="pbw"><div class="pbb" style="width:45%;background:var(--amber)"></div></div><div class="pbv">45%</div></div>
+        <div class="pbr"><div class="pbl">Question bank / tagging</div><div class="pbw"><div class="pbb" style="width:20%;background:var(--coral)"></div></div><div class="pbv">20%</div></div>
+        <div class="pbr"><div class="pbl">Basic reporting</div><div class="pbw"><div class="pbb" style="width:25%;background:var(--coral)"></div></div><div class="pbv">25%</div></div>
+        <div class="pbr"><div class="pbl">AI features (May target)</div><div class="pbw"><div class="pbb" style="width:5%;background:var(--text3)"></div></div><div class="pbv">0%</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ STUDENT FLOW ══════════════════ -->
+<div class="view" id="v-flow-student">
+  <div class="page-title">Student Exam Flow</div>
+  <div class="page-sub">End-to-end journey from login through results · UNF V0 scope · Accessibility requirements annotated</div>
+
+  <div class="ai-strip">
+    <div class="ai-icon">✦</div>
+    <div class="ai-body"><strong>Design rationale:</strong> This flow maps what must be working for the July UNF pilot. Red annotations mark accessibility gaps. The rationale display (post-submit) is a confirmed future feature from Nipun session — included in V1 scope, not V0.</div>
+  </div>
+
+  <!-- Flow diagram as SVG -->
+  <div class="card" style="padding:20px;overflow-x:auto;">
+    <div class="card-title">Complete student exam flow — V0 (UNF pilot) scope</div>
+    <svg width="100%" viewBox="0 0 900 560" style="min-width:760px;">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#5c5a57" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+        <marker id="arr-r" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#e8604a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+        <marker id="arr-g" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#4caf7d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+
+      <!-- Row labels -->
+      <text x="12" y="88" font-size="9" fill="#3a3a3a" font-family="DM Mono,monospace" text-anchor="middle" transform="rotate(-90,12,88)">PRE-EXAM</text>
+      <text x="12" y="240" font-size="9" fill="#3a3a3a" font-family="DM Mono,monospace" text-anchor="middle" transform="rotate(-90,12,240)">IN-EXAM</text>
+      <text x="12" y="420" font-size="9" fill="#3a3a3a" font-family="DM Mono,monospace" text-anchor="middle" transform="rotate(-90,12,420)">POST-EXAM</text>
+
+      <!-- Swimlane dividers -->
+      <line x1="28" y1="130" x2="900" y2="130" stroke="#1e1e24" stroke-width="1"/>
+      <line x1="28" y1="330" x2="900" y2="330" stroke="#1e1e24" stroke-width="1"/>
+
+      <!-- === PRE-EXAM ROW === -->
+      <!-- Login -->
+      <g>
+        <rect x="36" y="46" width="100" height="56" rx="8" fill="#1e1e24" stroke="#8b7ff5" stroke-width="1"/>
+        <text x="86" y="68" font-size="10" fill="#b5aeff" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Login</text>
+        <text x="86" y="82" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">SSO or</text>
+        <text x="86" y="93" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">credentials</text>
+      </g>
+      <line x1="136" y1="74" x2="164" y2="74" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- Dashboard -->
+      <g>
+        <rect x="164" y="46" width="108" height="56" rx="8" fill="#1e1e24" stroke="#8b7ff5" stroke-width="1"/>
+        <text x="218" y="68" font-size="10" fill="#b5aeff" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">My Exams</text>
+        <text x="218" y="82" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Upcoming +</text>
+        <text x="218" y="93" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">past results</text>
+      </g>
+      <line x1="272" y1="74" x2="300" y2="74" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- Select Exam -->
+      <g>
+        <rect x="300" y="46" width="108" height="56" rx="8" fill="#1e1e24" stroke="#8b7ff5" stroke-width="1"/>
+        <text x="354" y="68" font-size="10" fill="#b5aeff" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Select Exam</text>
+        <text x="354" y="82" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Date, time,</text>
+        <text x="354" y="93" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">instructions</text>
+      </g>
+      <line x1="408" y1="74" x2="436" y2="74" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- Accommodation check -->
+      <g>
+        <rect x="436" y="46" width="116" height="56" rx="8" fill="#1e1e24" stroke="#f5a623" stroke-width="1"/>
+        <text x="494" y="68" font-size="10" fill="#f5a623" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Accommodation</text>
+        <text x="494" y="80" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Extra time?</text>
+        <text x="494" y="91" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Auto-applied ✓</text>
+      </g>
+      <!-- Gap badge -->
+      <rect x="490" y="37" width="68" height="14" rx="4" fill="#e8604a" opacity=".15"/>
+      <text x="524" y="47" font-size="8" fill="#e8604a" font-family="DM Mono,monospace" text-anchor="middle">⚠ Manual today</text>
+
+      <line x1="552" y1="74" x2="580" y2="74" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- Lockdown Launch -->
+      <g>
+        <rect x="580" y="46" width="110" height="56" rx="8" fill="#1e1e24" stroke="#8b7ff5" stroke-width="1"/>
+        <text x="635" y="67" font-size="10" fill="#b5aeff" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Lockdown</text>
+        <text x="635" y="79" font-size="10" fill="#b5aeff" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Launch</text>
+        <text x="635" y="93" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Browser secured</text>
+      </g>
+      <line x1="690" y1="74" x2="718" y2="74" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- Instructions -->
+      <g>
+        <rect x="718" y="46" width="108" height="56" rx="8" fill="#1e1e24" stroke="#8b7ff5" stroke-width="1"/>
+        <text x="772" y="68" font-size="10" fill="#b5aeff" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Instructions</text>
+        <text x="772" y="82" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">+ accessibility</text>
+        <text x="772" y="93" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">toggle on/off</text>
+      </g>
+      <!-- Accessibility annotation -->
+      <rect x="710" y="37" width="80" height="13" rx="4" fill="#4caf7d" opacity=".15"/>
+      <text x="750" y="46" font-size="8" fill="#4caf7d" font-family="DM Mono,monospace" text-anchor="middle">🔑 A11Y control</text>
+
+      <!-- === IN-EXAM ROW === -->
+      <!-- Arrow from instructions down -->
+      <line x1="772" y1="102" x2="772" y2="148" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr)"/>
+      <line x1="772" y1="148" x2="696" y2="148" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- Q display -->
+      <g>
+        <rect x="580" y="148" width="116" height="64" rx="8" fill="#1e1e24" stroke="#2ec4a0" stroke-width="1"/>
+        <text x="638" y="170" font-size="10" fill="#2ec4a0" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Question</text>
+        <text x="638" y="182" font-size="10" fill="#2ec4a0" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Display</text>
+        <text x="638" y="198" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">MCQ · Vignette</text>
+      </g>
+
+      <!-- Annotation tools -->
+      <g>
+        <rect x="580" y="225" width="116" height="46" rx="8" fill="#1e1e24" stroke="#e8604a" stroke-width="1" stroke-dasharray="4 2"/>
+        <text x="638" y="246" font-size="10" fill="#e8604a" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Annotation</text>
+        <text x="638" y="259" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">V1: highlight +</text>
+      </g>
+      <rect x="604" y="216" width="72" height="13" rx="4" fill="#e8604a" opacity=".15"/>
+      <text x="640" y="225" font-size="8" fill="#e8604a" font-family="DM Mono,monospace" text-anchor="middle">⚠ NOT V0</text>
+
+      <!-- Line Q display to annotation -->
+      <line x1="638" y1="212" x2="638" y2="225" stroke="#5c5a57" stroke-width="1" stroke-dasharray="3 2"/>
+
+      <!-- Navigator -->
+      <g>
+        <rect x="436" y="148" width="116" height="64" rx="8" fill="#1e1e24" stroke="#2ec4a0" stroke-width="1"/>
+        <text x="494" y="170" font-size="10" fill="#2ec4a0" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Question</text>
+        <text x="494" y="182" font-size="10" fill="#2ec4a0" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Navigator</text>
+        <text x="494" y="198" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Repositioned ↗</text>
+      </g>
+
+      <!-- Controls bar -->
+      <g>
+        <rect x="300" y="148" width="116" height="64" rx="8" fill="#1e1e24" stroke="#2ec4a0" stroke-width="1"/>
+        <text x="358" y="170" font-size="10" fill="#2ec4a0" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Controls</text>
+        <text x="358" y="186" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Calculator · Flag</text>
+        <text x="358" y="198" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Timer · Keyboard</text>
+      </g>
+
+      <!-- Accessibility panel -->
+      <g>
+        <rect x="160" y="148" width="116" height="64" rx="8" fill="#1e1e24" stroke="#4caf7d" stroke-width="1"/>
+        <text x="218" y="168" font-size="10" fill="#4caf7d" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Accessibility</text>
+        <text x="218" y="180" font-size="10" fill="#4caf7d" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Panel</text>
+        <text x="218" y="196" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Magnify·Contrast</text>
+        <text x="218" y="207" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">OSK · TTS · Voice</text>
+      </g>
+      <rect x="170" y="138" width="96" height="13" rx="4" fill="#e8604a" opacity=".15"/>
+      <text x="218" y="148" font-size="8" fill="#e8604a" font-family="DM Mono,monospace" text-anchor="middle">⚠ CRITICAL — V0</text>
+
+      <!-- Arrows in-exam row (right to left flow) -->
+      <line x1="580" y1="180" x2="552" y2="180" stroke="#2ec4a0" stroke-width="1" marker-end="url(#arr-g)" opacity=".5"/>
+      <line x1="436" y1="180" x2="416" y2="180" stroke="#2ec4a0" stroke-width="1" marker-end="url(#arr-g)" opacity=".5"/>
+      <line x1="300" y1="180" x2="276" y2="180" stroke="#2ec4a0" stroke-width="1" marker-end="url(#arr-g)" opacity=".5"/>
+
+      <!-- Submit decision diamond -->
+      <g>
+        <polygon points="838,155 870,180 838,205 806,180" fill="#1e1e24" stroke="#8b7ff5" stroke-width="1"/>
+        <text x="838" y="177" font-size="9" fill="#b5aeff" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">All</text>
+        <text x="838" y="188" font-size="9" fill="#b5aeff" font-family="Instrument Sans,sans-serif" text-anchor="middle">answered?</text>
+      </g>
+      <!-- Arrow from Q to decision -->
+      <line x1="696" y1="180" x2="806" y2="180" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr)"/>
+      <!-- Yes branch down -->
+      <line x1="838" y1="205" x2="838" y2="290" stroke="#4caf7d" stroke-width="1" marker-end="url(#arr-g)"/>
+      <text x="844" y="250" font-size="9" fill="#4caf7d" font-family="Instrument Sans,sans-serif">Yes</text>
+      <!-- No branch back -->
+      <path d="M806 180 Q780 180 780 148 Q780 130 696 130 Q638 130 638 148" fill="none" stroke="#e8604a" stroke-width="1" marker-end="url(#arr-r)" stroke-dasharray="4 2"/>
+      <text x="740" y="128" font-size="9" fill="#e8604a" font-family="Instrument Sans,sans-serif">No — continue</text>
+
+      <!-- === POST-EXAM ROW === -->
+      <!-- Submit confirm -->
+      <g>
+        <rect x="782" y="290" width="112" height="56" rx="8" fill="#1e1e24" stroke="#8b7ff5" stroke-width="1"/>
+        <text x="838" y="312" font-size="10" fill="#b5aeff" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Submit</text>
+        <text x="838" y="324" font-size="10" fill="#b5aeff" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Confirm</text>
+        <text x="838" y="337" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Modal + review</text>
+      </g>
+      <line x1="782" y1="318" x2="710" y2="318" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- Score display -->
+      <g>
+        <rect x="582" y="290" width="128" height="56" rx="8" fill="#1e1e24" stroke="#2ec4a0" stroke-width="1"/>
+        <text x="646" y="312" font-size="10" fill="#2ec4a0" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Score Display</text>
+        <text x="646" y="326" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Pass/fail ·</text>
+        <text x="646" y="337" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Benchmark vs cohort</text>
+      </g>
+      <line x1="582" y1="318" x2="510" y2="318" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- Rationale V1 -->
+      <g>
+        <rect x="384" y="290" width="126" height="56" rx="8" fill="#1e1e24" stroke="#f5a623" stroke-width="1" stroke-dasharray="4 2"/>
+        <text x="447" y="310" font-size="10" fill="#f5a623" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Rationale</text>
+        <text x="447" y="322" font-size="10" fill="#f5a623" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Display</text>
+        <text x="447" y="335" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">V1 · Low-stakes</text>
+      </g>
+      <rect x="404" y="280" width="82" height="13" rx="4" fill="#f5a623" opacity=".15"/>
+      <text x="445" y="290" font-size="8" fill="#f5a623" font-family="DM Mono,monospace" text-anchor="middle">V1 scope</text>
+
+      <!-- Remediation flag -->
+      <g>
+        <rect x="164" y="290" width="190" height="56" rx="8" fill="#1e1e24" stroke="#e87ab5" stroke-width="1" stroke-dasharray="4 2"/>
+        <text x="259" y="312" font-size="10" fill="#e87ab5" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">AI Remediation</text>
+        <text x="259" y="326" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">30-Q PAEA PDF per</text>
+        <text x="259" y="337" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">student weakness · V2</text>
+      </g>
+      <rect x="205" y="280" width="106" height="13" rx="4" fill="#e87ab5" opacity=".12"/>
+      <text x="258" y="290" font-size="8" fill="#e87ab5" font-family="DM Mono,monospace" text-anchor="middle">AI · V2 scope</text>
+
+      <line x1="384" y1="318" x2="354" y2="318" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- Legend -->
+      <g>
+        <rect x="36" y="490" width="10" height="10" rx="2" fill="#1e1e24" stroke="#8b7ff5" stroke-width="1"/>
+        <text x="52" y="499" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif">V0 scope (UNF pilot)</text>
+        <rect x="180" y="490" width="10" height="10" rx="2" fill="#1e1e24" stroke="#e8604a" stroke-width="1" stroke-dasharray="3 2"/>
+        <text x="196" y="499" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif">V1 scope</text>
+        <rect x="280" y="490" width="10" height="10" rx="2" fill="#1e1e24" stroke="#e87ab5" stroke-width="1" stroke-dasharray="3 2"/>
+        <text x="296" y="499" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif">V2 / AI scope</text>
+        <rect x="380" y="490" width="10" height="10" rx="2" fill="none"/><rect x="380" y="493" width="30" height="4" rx="2" fill="#e8604a" opacity=".15"/>
+        <text x="416" y="499" font-size="9" fill="#e8604a" font-family="Instrument Sans,sans-serif">⚠ Gap / design debt</text>
+        <rect x="540" y="490" width="10" height="10" rx="2" fill="none"/><rect x="540" y="493" width="30" height="4" rx="2" fill="#4caf7d" opacity=".15"/>
+        <text x="576" y="499" font-size="9" fill="#4caf7d" font-family="Instrument Sans,sans-serif">Accessibility node</text>
+      </g>
+    </svg>
+  </div>
+
+  <!-- Accessibility breakdown below flow -->
+  <div class="g3" style="margin-top:12px;">
+    <div class="card">
+      <div class="card-title">V0 accessibility requirements <span class="card-sub">Critical for UNF Jul 2026</span></div>
+      <div class="ins"><div class="ins-meta"><span class="sp sp-c">Must-have</span></div><div class="ins-text">Magnification / zoom: platform-embedded, no OS dependency. Browser lockdown blocks system-level zoom.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="sp sp-c">Must-have</span></div><div class="ins-text">High contrast mode: toggle in-exam. Color schema switch for low-vision users.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="sp sp-c">Must-have</span></div><div class="ins-text">On-screen keyboard: built into platform per Pearson model. No external tools allowed in lockdown.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="sp sp-c">Must-have</span></div><div class="ins-text">Keyboard-only navigation: Tab-order, shortcut keys, Typeform-style key-to-select for MCQ options.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="sp sp-c">Must-have</span></div><div class="ins-text">Extra time accommodations: bulk assignment (not per-student per-quiz like D2L requires today).</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">V1 accessibility features <span class="card-sub">Post-UNF · Student portal overhaul</span></div>
+      <div class="ins"><div class="ins-meta"><span class="sp sp-h">V1</span></div><div class="ins-text">Voice-to-text / dictation: built-in dictate button in input boxes. No external software. Follows GRE/SAT/TOEFL model.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="sp sp-h">V1</span></div><div class="ins-text">Text-to-speech: API available. Read aloud question stem + options. Valuable for broader WCAG 2.1 AA compliance.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="sp sp-h">V1</span></div><div class="ins-text">Annotation tools: highlight, cross-out answer options. Standard on NCLEX + PANCE. Strong student expectation signal.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="sp sp-h">V1</span></div><div class="ins-text">ACR (accessibility compliance report) validation. Need external audit before broad rollout.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Competitive baseline <span class="card-sub">Who does accessibility well?</span></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-new">Benchmark</span></div><div class="ins-text">Pearson VUE (GRE, SAT, TOEFL): platform-embedded accessibility, all features in-app, no OS dependency. This is the model to follow.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-new">Benchmark</span></div><div class="ins-text">NBME / USMLE: built-in highlighting, exhibit tabs, passage reference. Clinical exam standard.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-gap">D2L gap</span></div><div class="ins-text">D2L requires individual accommodation setup per student per quiz. 7 students × 10 quizzes = 70 manual actions. Exxat must solve bulk assignment.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-gap">ExamSoft gap</span></div><div class="ins-text">ExamSoft accessibility implementation described as inadequate by Touro. Eye tracking (competitors adding) is a future differentiator to monitor.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ FACULTY FLOW ══════════════════ -->
+<div class="view" id="v-flow-faculty">
+  <div class="page-title">Faculty Question Bank Flow</div>
+  <div class="page-sub">From question creation through multi-campus sharing · Smart Views · Versioning · Review workflow</div>
+
+  <div class="card" style="padding:20px;overflow-x:auto;">
+    <div class="card-title">Faculty: question lifecycle — create → tag → review → publish → share</div>
+    <svg width="100%" viewBox="0 0 900 440" style="min-width:760px;">
+      <defs>
+        <marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#5c5a57" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+        <marker id="arr2-a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#8b7ff5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+        <marker id="arr2-t" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#2ec4a0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+
+      <!-- Phase headers -->
+      <rect x="36" y="20" width="108" height="22" rx="4" fill="rgba(139,127,245,.1)"/>
+      <text x="90" y="34" font-size="9" fill="#8b7ff5" font-family="DM Mono,monospace" font-weight="500" text-anchor="middle">CREATE</text>
+      <rect x="168" y="20" width="108" height="22" rx="4" fill="rgba(46,196,160,.08)"/>
+      <text x="222" y="34" font-size="9" fill="#2ec4a0" font-family="DM Mono,monospace" font-weight="500" text-anchor="middle">TAG</text>
+      <rect x="300" y="20" width="108" height="22" rx="4" fill="rgba(245,166,35,.08)"/>
+      <text x="354" y="34" font-size="9" fill="#f5a623" font-family="DM Mono,monospace" font-weight="500" text-anchor="middle">REVIEW</text>
+      <rect x="432" y="20" width="108" height="22" rx="4" fill="rgba(76,175,125,.08)"/>
+      <text x="486" y="34" font-size="9" fill="#4caf7d" font-family="DM Mono,monospace" font-weight="500" text-anchor="middle">PUBLISH</text>
+      <rect x="564" y="20" width="108" height="22" rx="4" fill="rgba(120,170,245,.08)"/>
+      <text x="618" y="34" font-size="9" fill="#78aaf5" font-family="DM Mono,monospace" font-weight="500" text-anchor="middle">SHARE / USE</text>
+      <rect x="696" y="20" width="108" height="22" rx="4" fill="rgba(232,122,181,.08)"/>
+      <text x="750" y="34" font-size="9" fill="#e87ab5" font-family="DM Mono,monospace" font-weight="500" text-anchor="middle">ANALYTICS</text>
+
+      <!-- Entry points (top row) -->
+      <text x="90" y="62" font-size="9" fill="#3a3a3a" font-family="Instrument Sans,sans-serif" text-anchor="middle">3 entry points:</text>
+      <text x="90" y="73" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Bank · Course · Exam</text>
+
+      <!-- Node: Write stem -->
+      <g>
+        <rect x="36" y="82" width="108" height="58" rx="8" fill="#1e1e24" stroke="#8b7ff5" stroke-width="1"/>
+        <text x="90" y="104" font-size="10" fill="#b5aeff" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Write Question</text>
+        <text x="90" y="117" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Stem + options</text>
+        <text x="90" y="128" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Image · Rationale</text>
+      </g>
+      <line x1="144" y1="111" x2="168" y2="111" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr2)"/>
+
+      <!-- Node: AI Tag assist -->
+      <g>
+        <rect x="168" y="82" width="108" height="58" rx="8" fill="#1e1e24" stroke="#2ec4a0" stroke-width="1"/>
+        <text x="222" y="104" font-size="10" fill="#2ec4a0" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">AI Tag Assist</text>
+        <text x="222" y="117" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Bloom's · LO</text>
+        <text x="222" y="128" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Difficulty · Topic</text>
+      </g>
+      <!-- AI badge -->
+      <rect x="196" y="72" width="54" height="13" rx="4" fill="#4caf7d" opacity=".15"/>
+      <text x="223" y="82" font-size="8" fill="#4caf7d" font-family="DM Mono,monospace" text-anchor="middle">✦ AI on save</text>
+      <line x1="276" y1="111" x2="300" y2="111" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr2)"/>
+
+      <!-- Node: Review -->
+      <g>
+        <rect x="300" y="82" width="108" height="58" rx="8" fill="#1e1e24" stroke="#f5a623" stroke-width="1"/>
+        <text x="354" y="104" font-size="10" fill="#f5a623" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Peer Review</text>
+        <text x="354" y="117" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Async comments</text>
+        <text x="354" y="128" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Diff view</text>
+      </g>
+      <!-- Gap badge -->
+      <rect x="322" y="72" width="66" height="13" rx="4" fill="#e8604a" opacity=".15"/>
+      <text x="355" y="82" font-size="8" fill="#e8604a" font-family="DM Mono,monospace" text-anchor="middle">⚠ No async today</text>
+      <line x1="408" y1="111" x2="432" y2="111" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr2)"/>
+
+      <!-- Decision: approved? -->
+      <polygon points="486,92 516,111 486,130 456,111" fill="#1e1e24" stroke="#4caf7d" stroke-width="1"/>
+      <text x="486" y="108" font-size="8" fill="#4caf7d" font-family="Instrument Sans,sans-serif" text-anchor="middle">Approved</text>
+      <text x="486" y="119" font-size="8" fill="#4caf7d" font-family="Instrument Sans,sans-serif" text-anchor="middle">by HOD?</text>
+      <!-- Yes -->
+      <line x1="516" y1="111" x2="564" y2="111" stroke="#4caf7d" stroke-width="1" marker-end="url(#arr2-t)"/>
+      <text x="538" y="108" font-size="8" fill="#4caf7d" font-family="Instrument Sans,sans-serif">Yes</text>
+      <!-- No — back to review -->
+      <path d="M486 130 Q486 155 354 155 Q354 140 354 140" fill="none" stroke="#e8604a" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#arr2)"/>
+      <text x="400" y="165" font-size="8" fill="#e8604a" font-family="Instrument Sans,sans-serif">Revise → re-review</text>
+
+      <!-- Node: In bank -->
+      <g>
+        <rect x="564" y="82" width="108" height="58" rx="8" fill="#1e1e24" stroke="#78aaf5" stroke-width="1"/>
+        <text x="618" y="104" font-size="10" fill="#78aaf5" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Question Bank</text>
+        <text x="618" y="117" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Universal repo</text>
+        <text x="618" y="128" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Version history</text>
+      </g>
+      <line x1="672" y1="111" x2="696" y2="111" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr2)"/>
+
+      <!-- Node: Analytics -->
+      <g>
+        <rect x="696" y="82" width="108" height="58" rx="8" fill="#1e1e24" stroke="#e87ab5" stroke-width="1"/>
+        <text x="750" y="104" font-size="10" fill="#e87ab5" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Performance</text>
+        <text x="750" y="117" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">p-value · PBis</text>
+        <text x="750" y="128" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Discrimination</text>
+      </g>
+
+      <!-- Smart Views layer (below) -->
+      <rect x="36" y="200" width="300" height="76" rx="10" fill="none" stroke="rgba(139,127,245,.3)" stroke-width="1" stroke-dasharray="5 3"/>
+      <text x="186" y="218" font-size="9" fill="#8b7ff5" font-family="DM Mono,monospace" text-anchor="middle">SMART VIEWS (personal organizer layer)</text>
+      <g>
+        <rect x="50" y="225" width="120" height="38" rx="6" fill="#1e1e24" stroke="rgba(139,127,245,.4)" stroke-width="1"/>
+        <text x="110" y="239" font-size="9" fill="#b5aeff" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Always-updated</text>
+        <text x="110" y="252" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Latest version always</text>
+      </g>
+      <g>
+        <rect x="202" y="225" width="120" height="38" rx="6" fill="#1e1e24" stroke="rgba(139,127,245,.4)" stroke-width="1"/>
+        <text x="262" y="239" font-size="9" fill="#b5aeff" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Fixed snapshot</text>
+        <text x="262" y="252" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Audit trail / exam lock</text>
+      </g>
+
+      <!-- Multi-campus layer (below right) -->
+      <rect x="450" y="200" width="420" height="76" rx="10" fill="none" stroke="rgba(120,170,245,.3)" stroke-width="1" stroke-dasharray="5 3"/>
+      <text x="660" y="218" font-size="9" fill="#78aaf5" font-family="DM Mono,monospace" text-anchor="middle">MULTI-CAMPUS SHARING — solves Touro #1 pain</text>
+      <g>
+        <rect x="464" y="225" width="120" height="38" rx="6" fill="#1e1e24" stroke="rgba(120,170,245,.4)" stroke-width="1"/>
+        <text x="524" y="239" font-size="9" fill="#78aaf5" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Campus A</text>
+        <text x="524" y="252" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">View-only access</text>
+      </g>
+      <g>
+        <rect x="612" y="225" width="120" height="38" rx="6" fill="#1e1e24" stroke="rgba(120,170,245,.4)" stroke-width="1"/>
+        <text x="672" y="239" font-size="9" fill="#78aaf5" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Campus B</text>
+        <text x="672" y="252" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">Build own exam</text>
+      </g>
+      <g>
+        <rect x="760" y="225" width="100" height="38" rx="6" fill="#1e1e24" stroke="rgba(120,170,245,.4)" stroke-width="1"/>
+        <text x="810" y="239" font-size="9" fill="#78aaf5" font-family="Instrument Sans,sans-serif" font-weight="600" text-anchor="middle">Campus N</text>
+        <text x="810" y="252" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif" text-anchor="middle">No re-upload</text>
+      </g>
+
+      <!-- Import path (bottom) -->
+      <rect x="36" y="310" width="400" height="60" rx="10" fill="rgba(232,96,74,.04)" stroke="rgba(232,96,74,.2)" stroke-width="1" stroke-dasharray="4 2"/>
+      <text x="70" y="328" font-size="9" fill="#e8604a" font-family="DM Mono,monospace">IMPORT PATH (ExamSoft migration)</text>
+      <text x="70" y="345" font-size="10" fill="#9a9690" font-family="Instrument Sans,sans-serif">ExamSoft export →  AI auto-tag → tag review → approve → bank</text>
+      <text x="70" y="360" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif">10,000+ question migrations · AI converts folder structure to flat tags · Suggestion system prevents inconsistencies</text>
+
+      <!-- Version branching -->
+      <rect x="460" y="310" width="420" height="60" rx="10" fill="rgba(76,175,125,.04)" stroke="rgba(76,175,125,.2)" stroke-width="1" stroke-dasharray="4 2"/>
+      <text x="494" y="328" font-size="9" fill="#4caf7d" font-family="DM Mono,monospace">VERSIONING SYSTEM</text>
+      <text x="494" y="345" font-size="10" fill="#9a9690" font-family="Instrument Sans,sans-serif">Question edit → new version → owner approval → choose latest or snapshot</text>
+      <text x="494" y="360" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif">HOD sees version usage across faculty · Substantial changes = new question entirely</text>
+    </svg>
+  </div>
+
+  <div class="g2" style="margin-top:12px;">
+    <div class="card">
+      <div class="card-title">Tag structure — 5–7 predefined categories</div>
+      <div class="g2" style="margin-bottom:0;">
+        <div class="fb fb-accent"><div class="fb-title">Question type</div><div class="fb-desc">MCQ · Multi-select · Clinical vignette · True/False · Matching · Free response</div></div>
+        <div class="fb fb-teal"><div class="fb-title">Bloom's taxonomy</div><div class="fb-desc">Levels 1–3 preferred (Touro confirmed). Remember · Understand · Apply · Analyze · Evaluate · Create</div></div>
+        <div class="fb fb-amber"><div class="fb-title">Difficulty</div><div class="fb-desc">Easy · Medium · Hard. Department-defined allowed values. Prevents tag drift.</div></div>
+        <div class="fb fb-blue"><div class="fb-title">Body system / topic</div><div class="fb-desc">Cardiovascular · Respiratory · Neurology etc. Free-form tags for flexible categorization also allowed.</div></div>
+        <div class="fb fb-green"><div class="fb-title">Learning objective</div><div class="fb-desc">Linked to course LO. AI suggests on save. CAPTE/ARC-PA competency mapping.</div></div>
+        <div class="fb fb-coral"><div class="fb-title">NCCPA blueprint cell</div><div class="fb-desc">PA-specific: maps question to NCCPA content area. Enables blueprint-based exam assembly.</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Faculty UX tension — power vs. casual <span class="why">why: informs progressive disclosure architecture decision</span></div>
+      <div class="ai-strip" style="margin-bottom:12px;">
+        <div class="ai-icon" style="font-size:10px;">!</div>
+        <div class="ai-body" style="font-size:10px;">This is a cross-product signal. Same tension in FaaS form builder. Progressive disclosure is the platform-level architectural answer — not two separate interfaces.</div>
+      </div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-per">Power user (30%)</span></div><div class="ins-text">Wants Bloom's tagging, LO linking, cross-course progression tracking, version comparison, usage analytics. Will invest time in configuration. Curriculum map is core value.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-per">Research-first faculty (70%)</span></div><div class="ins-text">Teaching is secondary. Wants dead-simple question creation. No overhead. "Don't make me fill in more fields." Will abandon the platform if complexity threshold exceeded.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-opp">Design solution</span></div><div class="ins-text">Progressive disclosure: simple create flow by default. Power settings behind "advanced" toggle. AI handles tagging automatically so power users get value without burdening casual users.</div></div>
+      <div class="ins-src">Platform strategy · Mar 4 · PRISM Day 2 · Mar 3</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ ADMIN FLOW ══════════════════ -->
+<div class="view" id="v-flow-admin">
+  <div class="page-title">Admin Assessment Creation Flow</div>
+  <div class="page-sub">From question bank selection through exam scheduling, distribution, and accommodation management</div>
+
+  <div class="card" style="padding:20px;overflow-x:auto;">
+    <div class="card-title">Admin: assessment creation — bank → build → configure → distribute</div>
+    <svg width="100%" viewBox="0 0 900 320" style="min-width:700px;">
+      <defs>
+        <marker id="arr3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#5c5a57" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+      <!-- Row 1: main flow -->
+      <g><rect x="30" y="40" width="110" height="60" rx="8" fill="#1e1e24" stroke="#8b7ff5" stroke-width="1"/>
+        <text x="85" y="63" font-size="10" fill="#b5aeff" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600">Select from</text>
+        <text x="85" y="75" font-size="10" fill="#b5aeff" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600">Q-Bank</text>
+        <text x="85" y="90" font-size="9" fill="#5c5a57" text-anchor="middle" font-family="Instrument Sans,sans-serif">Smart Views / filter</text>
+      </g>
+      <line x1="140" y1="70" x2="164" y2="70" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr3)"/>
+      <g><rect x="164" y="40" width="110" height="60" rx="8" fill="#1e1e24" stroke="#8b7ff5" stroke-width="1"/>
+        <text x="219" y="63" font-size="10" fill="#b5aeff" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600">AI Blueprint</text>
+        <text x="219" y="75" font-size="10" fill="#b5aeff" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600">Assembly</text>
+        <text x="219" y="90" font-size="9" fill="#5c5a57" text-anchor="middle" font-family="Instrument Sans,sans-serif">NCCPA cells satisfied</text>
+      </g>
+      <rect x="175" y="30" width="90" height="13" rx="4" fill="#4caf7d" opacity=".15"/>
+      <text x="220" y="40" font-size="8" fill="#4caf7d" text-anchor="middle" font-family="DM Mono,monospace">✦ AI — V2</text>
+      <line x1="274" y1="70" x2="298" y2="70" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr3)"/>
+      <g><rect x="298" y="40" width="110" height="60" rx="8" fill="#1e1e24" stroke="#2ec4a0" stroke-width="1"/>
+        <text x="353" y="63" font-size="10" fill="#2ec4a0" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600">Configure</text>
+        <text x="353" y="75" font-size="10" fill="#2ec4a0" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600">Exam</text>
+        <text x="353" y="90" font-size="9" fill="#5c5a57" text-anchor="middle" font-family="Instrument Sans,sans-serif">Time · type · lockdown</text>
+      </g>
+      <line x1="408" y1="70" x2="432" y2="70" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr3)"/>
+      <g><rect x="432" y="40" width="120" height="60" rx="8" fill="#1e1e24" stroke="#f5a623" stroke-width="1"/>
+        <text x="492" y="63" font-size="10" fill="#f5a623" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600">Bulk Accomm.</text>
+        <text x="492" y="75" font-size="10" fill="#f5a623" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600">Assignment</text>
+        <text x="492" y="90" font-size="9" fill="#5c5a57" text-anchor="middle" font-family="Instrument Sans,sans-serif">vs. 1-by-1 in D2L</text>
+      </g>
+      <rect x="450" y="30" width="86" height="13" rx="4" fill="#f5a623" opacity=".15"/>
+      <text x="493" y="40" font-size="8" fill="#f5a623" text-anchor="middle" font-family="DM Mono,monospace">Competitive diff.</text>
+      <line x1="552" y1="70" x2="576" y2="70" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr3)"/>
+      <g><rect x="576" y="40" width="110" height="60" rx="8" fill="#1e1e24" stroke="#2ec4a0" stroke-width="1"/>
+        <text x="631" y="63" font-size="10" fill="#2ec4a0" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600">Distribute</text>
+        <text x="631" y="75" font-size="10" fill="#2ec4a0" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600">to Students</text>
+        <text x="631" y="90" font-size="9" fill="#5c5a57" text-anchor="middle" font-family="Instrument Sans,sans-serif">Section / cohort</text>
+      </g>
+      <line x1="686" y1="70" x2="710" y2="70" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr3)"/>
+      <g><rect x="710" y="40" width="110" height="60" rx="8" fill="#1e1e24" stroke="#78aaf5" stroke-width="1"/>
+        <text x="765" y="63" font-size="10" fill="#78aaf5" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600">Monitor</text>
+        <text x="765" y="75" font-size="10" fill="#78aaf5" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600">Live Session</text>
+        <text x="765" y="90" font-size="9" fill="#5c5a57" text-anchor="middle" font-family="Instrument Sans,sans-serif">Submit on behalf</text>
+      </g>
+
+      <!-- Row 2: post-exam admin actions -->
+      <text x="30" y="160" font-size="9" fill="#3a3a3a" font-family="DM Mono,monospace">POST-EXAM ADMIN</text>
+      <g><rect x="30" y="170" width="130" height="52" rx="8" fill="#1e1e24" stroke="#e87ab5" stroke-width="1"/>
+        <text x="95" y="191" font-size="10" fill="#e87ab5" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600">View Results</text>
+        <text x="95" y="208" font-size="9" fill="#5c5a57" text-anchor="middle" font-family="Instrument Sans,sans-serif">Section stats · Pass rate</text>
+      </g>
+      <line x1="160" y1="196" x2="188" y2="196" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr3)"/>
+      <g><rect x="188" y="170" width="130" height="52" rx="8" fill="#1e1e24" stroke="#e87ab5" stroke-width="1"/>
+        <text x="253" y="191" font-size="10" fill="#e87ab5" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600">Item Analysis</text>
+        <text x="253" y="208" font-size="9" fill="#5c5a57" text-anchor="middle" font-family="Instrument Sans,sans-serif">p-value · PBis · flag</text>
+      </g>
+      <line x1="318" y1="196" x2="346" y2="196" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr3)"/>
+      <g><rect x="346" y="170" width="130" height="52" rx="8" fill="#1e1e24" stroke="#e87ab5" stroke-width="1"/>
+        <text x="411" y="191" font-size="10" fill="#e87ab5" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600">Accreditation</text>
+        <text x="411" y="205" font-size="9" fill="#5c5a57" text-anchor="middle" font-family="Instrument Sans,sans-serif">Export / map to</text>
+        <text x="411" y="216" font-size="9" fill="#5c5a57" text-anchor="middle" font-family="Instrument Sans,sans-serif">CAPTE/ARC-PA</text>
+      </g>
+      <line x1="476" y1="196" x2="504" y2="196" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr3)"/>
+      <g><rect x="504" y="170" width="150" height="52" rx="8" fill="#1e1e24" stroke="#e87ab5" stroke-width="1"/>
+        <text x="579" y="191" font-size="10" fill="#e87ab5" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600">Push to Blackboard</text>
+        <text x="579" y="208" font-size="9" fill="#5c5a57" text-anchor="middle" font-family="Instrument Sans,sans-serif">Column-name match</text>
+      </g>
+      <rect x="526" y="160" width="106" height="13" rx="4" fill="#e8604a" opacity=".15"/>
+      <text x="579" y="170" font-size="8" fill="#e8604a" text-anchor="middle" font-family="DM Mono,monospace">⚠ Manual col-match today</text>
+      <line x1="654" y1="196" x2="682" y2="196" stroke="#5c5a57" stroke-width="1" marker-end="url(#arr3)"/>
+      <g><rect x="682" y="170" width="160" height="52" rx="8" fill="#1e1e24" stroke="#4caf7d" stroke-width="1"/>
+        <text x="762" y="191" font-size="10" fill="#4caf7d" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600">PANCE Readiness</text>
+        <text x="762" y="208" font-size="9" fill="#5c5a57" text-anchor="middle" font-family="Instrument Sans,sans-serif">AI predictor · cohort view</text>
+      </g>
+      <rect x="706" y="160" width="112" height="13" rx="4" fill="#4caf7d" opacity=".12"/>
+      <text x="762" y="170" font-size="8" fill="#4caf7d" text-anchor="middle" font-family="DM Mono,monospace">✦ AI — confirmed Touro</text>
+
+      <!-- Gap callout: Blackboard -->
+      <text x="30" y="268" font-size="9" fill="#e8604a" font-family="Instrument Sans,sans-serif">⚠  Blackboard push today: admin must manually type column name to match assessment ID. No validation. Silent mismatches possible.</text>
+      <text x="30" y="283" font-size="9" fill="#5c5a57" font-family="Instrument Sans,sans-serif">Fix: assessment ID ↔ Blackboard column auto-matching + error state if no match found before push.</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ══════════════════ FEATURE MAP: Q-BANK ══════════════════ -->
+<div class="view" id="v-feat-qbank">
+  <div class="page-title">Question Bank — Feature Tree</div>
+  <div class="page-sub">Full feature scope from Granola sessions · Versioned by delivery phase · AI layer annotated</div>
+
+  <div class="g3">
+    <div class="card">
+      <div class="card-title" style="color:var(--accent)">Question creation</div>
+      <div class="fb fb-accent" style="margin-bottom:6px;"><div class="fb-title">Rich text editor</div><div class="fb-desc">Stem, options, image upload, media embed, table support. Rationale field (teacher-defined, shown post-submit on low-stakes).</div></div>
+      <div class="fb fb-accent" style="margin-bottom:6px;"><div class="fb-title">Question types</div><div class="fb-desc">MCQ · Multi-select · Clinical vignette (multi-paragraph) · True/False · Matching · Free response. V1 adds extended types.</div></div>
+      <div class="fb fb-accent"><div class="fb-title">Version control</div><div class="fb-desc">Every edit creates new version. Owner approval required for modifications. Substantial changes = new question UUID. HOD sees version usage across faculty.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--teal)">Tagging system</div>
+      <div class="fb fb-teal" style="margin-bottom:6px;"><div class="fb-title">5–7 predefined categories</div><div class="fb-desc">Question type · Bloom's (1–3) · Difficulty · Body system · Learning objective · NCCPA blueprint cell. Department-defined allowed values for strict categories.</div></div>
+      <div class="fb fb-teal" style="margin-bottom:6px;"><div class="fb-title">AI tag assist ✦</div><div class="fb-desc">Bloom's taxonomy auto-suggest on save. LO mapping suggestion. Tag consistency checker (heart vs cardiovascular). Import from ExamSoft auto-tags 10,000+ questions.</div></div>
+      <div class="fb fb-teal"><div class="fb-title">Smart Views</div><div class="fb-desc">Personal private folders auto-populated by tag criteria. Mode 1: always-updated (latest versions). Mode 2: fixed snapshot (exam audit trail). Dynamic updates when new questions match.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--amber)">Review workflow</div>
+      <div class="fb fb-amber" style="margin-bottom:6px;"><div class="fb-title">Peer review</div><div class="fb-desc">Async comment threading (V1 — not available today). Diff view showing changes between versions. Draft → In Review → Approved status states.</div></div>
+      <div class="fb fb-amber" style="margin-bottom:6px;"><div class="fb-title">HOD approval</div><div class="fb-desc">Head of department visibility into all version usage across faculty. Approval gates for new questions before campus-wide availability.</div></div>
+      <div class="fb fb-amber"><div class="fb-title">Import / migration</div><div class="fb-desc">ExamSoft export → AI auto-tag → review → approve → bank. 10,000+ question migration supported. Folder structure auto-converted to flat tags.</div></div>
+    </div>
+  </div>
+  <div class="g3">
+    <div class="card">
+      <div class="card-title" style="color:var(--blue)">Assessment assembly</div>
+      <div class="fb fb-blue" style="margin-bottom:6px;"><div class="fb-title">Manual selection</div><div class="fb-desc">Filter by any tag combination. Difficulty distribution dashboard. Preview questions before adding. Assessment creation from bank direct, within course, or during exam setup.</div></div>
+      <div class="fb fb-blue" style="margin-bottom:6px;"><div class="fb-title">AI blueprint assembly ✦</div><div class="fb-desc">V2: AI selects questions satisfying all NCCPA blueprint cells. 5-question Bloom's coverage check. Psychometric-based exam creation. "Lifesaver" — Touro direct quote.</div></div>
+      <div class="fb fb-blue"><div class="fb-title">Randomization</div><div class="fb-desc">Question order randomization per student. Option order randomization. Parallel forms from same pool. Prevents cheating in synchronous settings.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--green)">Multi-campus sharing</div>
+      <div class="fb fb-green" style="margin-bottom:6px;"><div class="fb-title">Universal repository</div><div class="fb-desc">Single source of truth — no more copy/paste between ExamSoft instances. View-only access for approved questions from other campuses. Build own exam from shared bank.</div></div>
+      <div class="fb fb-green" style="margin-bottom:6px;"><div class="fb-title">Access controls</div><div class="fb-desc">Department / course-level access. View vs. modify rights. Campus-scoped visibility. Course-level auto-tagging when questions created within specific courses.</div></div>
+      <div class="fb fb-green"><div class="fb-title">Approval workflow</div><div class="fb-desc">New questions require campus approval before becoming available cross-campus. HOD can see which campuses are using which versions. Prevents unauthorized modifications.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--coral)">Analytics layer</div>
+      <div class="fb fb-coral" style="margin-bottom:6px;"><div class="fb-title">Item performance</div><div class="fb-desc">p-value per question per course offering. Point biserial (closer to 1 = better). Discrimination index. Negative PBis = flag for review. Usage count across exams.</div></div>
+      <div class="fb fb-coral" style="margin-bottom:6px;"><div class="fb-title">Clickable insights</div><div class="fb-desc">Performance breakdown by course instance. Filter by creator, date range, difficulty. Correctness % across different student cohorts. Visual difficulty distribution dashboard.</div></div>
+      <div class="fb fb-coral"><div class="fb-title">Rubric support</div><div class="fb-desc">% score rubrics for PD lab testing (Manhattan PA model). Faculty review questions as good/bad based on metrics. Integration with skills checklist for competency-mapped exams.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ FEATURE MAP: ACCESSIBILITY ══════════════════ -->
+<div class="view" id="v-feat-access">
+  <div class="page-title">Accessibility Feature Layer</div>
+  <div class="page-sub">WCAG 2.1 AA target · Platform-embedded only (lockdown browser restriction) · Pearson Education model · UNF V0 scope</div>
+
+  <div class="ai-strip">
+    <div class="ai-icon">!</div>
+    <div class="ai-body"><strong>Design constraint that shapes everything:</strong> Lockdown browser blocks all OS-level accessibility tools. Screen readers, system zoom, OS high contrast, 3rd-party dictation software — all unavailable. Every accessibility feature must be built into the platform itself. This is not a choice — it is a legal and compliance requirement. Model to follow: Pearson VUE (GRE, SAT, TOEFL).</div>
+  </div>
+
+  <div class="g4">
+    <div class="mc"><div class="ml">V0 must-haves</div><div class="mv" style="color:var(--coral);font-size:20px;">5</div><div class="md dd">UNF pilot blockers</div></div>
+    <div class="mc"><div class="ml">V1 features</div><div class="mv" style="color:var(--amber);font-size:20px;">4</div><div class="md dn">Student portal overhaul</div></div>
+    <div class="mc"><div class="ml">Design complete</div><div class="mv" style="color:var(--green);font-size:20px;">30%</div><div class="md du">Navigator repositioned</div></div>
+    <div class="mc"><div class="ml">WCAG target</div><div class="mv" style="font-size:16px;color:var(--accent)">2.1 AA</div><div class="md dn">ACR validation needed</div></div>
+  </div>
+
+  <div class="gw">
+    <div class="card">
+      <div class="card-title">V0 feature scope — UNF pilot (July 2026) <span class="card-sub">All critical for adoption</span></div>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>Feature</th><th>Approach</th><th>Benchmark</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Magnification / zoom</strong></td><td>Platform-embedded zoom control. Range 100–200%. Independent of browser zoom.</td><td>Pearson VUE, NBME</td><td><span class="sp sp-c">Not started</span></td></tr>
+            <tr><td><strong>High contrast mode</strong></td><td>Toggle in accessibility panel. Dark, high-contrast, yellow-on-black options. WCAG contrast ratios enforced.</td><td>NBME, USMLE</td><td><span class="sp sp-c">Not started</span></td></tr>
+            <tr><td><strong>On-screen keyboard</strong></td><td>Built-in OSK in exam interface. Floating, repositionable. No external dependency.</td><td>Pearson model</td><td><span class="sp sp-c">Design needed</span></td></tr>
+            <tr><td><strong>Keyboard-only nav</strong></td><td>Tab order logic. Shortcut keys for common actions. Typeform-style: press 1/2/3 to select MCQ option. Navigator accessible via keyboard.</td><td>WCAG 2.1 AA §2.1</td><td><span class="sp sp-h">Partial</span></td></tr>
+            <tr><td><strong>Extra time accommodations</strong></td><td>Bulk assignment — set once per student per exam, applies across all questions. No individual setup per question.</td><td>vs. D2L (per-quiz manual)</td><td><span class="sp sp-c">Not started</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">V1 features — post-UNF</div>
+      <div class="fb fb-accent" style="margin-bottom:7px;"><div class="fb-title">Voice-to-text / dictation</div><div class="fb-desc">Built-in dictate button in input boxes. No external activation. Models Pearson's GRE dictation feature. API-based implementation available.</div></div>
+      <div class="fb fb-teal" style="margin-bottom:7px;"><div class="fb-title">Text-to-speech</div><div class="fb-desc">Read aloud question stem + answer options. API available — tech team confirmed feasibility. Required for broader WCAG 2.1 AA compliance.</div></div>
+      <div class="fb fb-amber" style="margin-bottom:7px;"><div class="fb-title">Annotation tools</div><div class="fb-desc">Highlight text in stem. Cross-out answer options. Standard on NCLEX, PANCE, USMLE. Strong student expectation from interview data.</div></div>
+      <div class="fb fb-coral"><div class="fb-title">ACR validation</div><div class="fb-desc">External accessibility compliance report required. Customer meetings planned for real-world accessibility insights. Must precede broad rollout.</div></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px;">
+    <div class="card-title">Competitor accessibility baseline <span class="why">why: sets the minimum bar Exxat must clear to win accessibility-conscious programs</span></div>
+    <div class="tbl-scroll">
+      <table class="tbl">
+        <thead><tr><th>Platform</th><th>Zoom</th><th>High contrast</th><th>Keyboard nav</th><th>Annotation</th><th>Voice</th><th>TTS</th><th>Bulk accommodations</th></tr></thead>
+        <tbody>
+          <tr><td><strong style="color:var(--accent)">Exxat V0 (target)</strong></td><td><span class="sp sp-h">Planned</span></td><td><span class="sp sp-h">Planned</span></td><td><span class="sp sp-h">Partial</span></td><td><span class="sp sp-c">V1</span></td><td><span class="sp sp-c">V1</span></td><td><span class="sp sp-c">V1</span></td><td><span class="sp sp-h">Planned</span></td></tr>
+          <tr><td>ExamSoft (current)</td><td><span class="sp sp-c">Inadequate</span></td><td><span class="sp sp-c">Inadequate</span></td><td><span class="sp sp-h">Partial</span></td><td><span class="sp sp-c">No</span></td><td><span class="sp sp-c">No</span></td><td><span class="sp sp-c">No</span></td><td><span class="sp sp-c">Manual</span></td></tr>
+          <tr><td>D2L BrightSpace</td><td><span class="sp sp-m">Yes</span></td><td><span class="sp sp-m">Yes</span></td><td><span class="sp sp-m">Good</span></td><td><span class="sp sp-c">No</span></td><td><span class="sp sp-h">Partial</span></td><td><span class="sp sp-h">Partial</span></td><td><span class="sp sp-c">Per-quiz manual</span></td></tr>
+          <tr><td>Pearson VUE (GRE/SAT)</td><td><span class="sp sp-m">Yes</span></td><td><span class="sp sp-m">Yes</span></td><td><span class="sp sp-m">Full</span></td><td><span class="sp sp-m">Yes</span></td><td><span class="sp sp-m">Yes</span></td><td><span class="sp sp-m">Yes</span></td><td><span class="sp sp-m">Auto-applied</span></td></tr>
+          <tr><td>NBME / USMLE</td><td><span class="sp sp-m">Yes</span></td><td><span class="sp sp-m">Yes</span></td><td><span class="sp sp-m">Full</span></td><td><span class="sp sp-m">Yes</span></td><td><span class="sp sp-h">Partial</span></td><td><span class="sp sp-h">Partial</span></td><td><span class="sp sp-m">Auto-applied</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ AI FEATURE LAYER ══════════════════ -->
+<div class="view" id="v-feat-ai">
+  <div class="page-title">AI Feature Layer</div>
+  <div class="page-sub">Confirmed use cases from Granola · Phased by version · All 5 sources cited</div>
+
+  <div class="g4">
+    <div class="mc"><div class="ml">AI features confirmed</div><div class="mv">6</div><div class="md du">From Touro + PRISM sessions</div></div>
+    <div class="mc"><div class="ml">Target launch</div><div class="mv" style="font-size:16px;color:var(--amber)">May '26</div><div class="md dn">AI integration sprint</div></div>
+    <div class="mc"><div class="ml">AI model approach</div><div class="mv" style="font-size:13px;color:var(--accent)">Multi-model</div><div class="md dn">OpenAI · Gemini · Anthropic</div></div>
+    <div class="mc"><div class="ml">Curriculum mapping accuracy</div><div class="mv">60%</div><div class="md dd">Target: 80%+ with refinement</div></div>
+  </div>
+
+  <div class="g3">
+    <div class="card">
+      <div class="card-title" style="color:var(--green)">V1 AI — May 2026 sprint</div>
+      <div class="fb fb-green" style="margin-bottom:7px;"><div class="fb-title">✦ Bloom's tag assist on save</div><div class="fb-desc">Automatic Bloom's level suggestion when faculty finishes writing a question. Faculty can accept, reject, or override. Rejection data used to refine model. Current accuracy: 50–60% → target 80%+.</div></div>
+      <div class="fb fb-green" style="margin-bottom:7px;"><div class="fb-title">✦ AI import tagger</div><div class="fb-desc">ExamSoft 10,000+ question migration: AI auto-converts folder structure to flat tags. Tag consistency checker prevents drift (heart vs cardiovascular). Review queue for human approval before finalizing.</div></div>
+      <div class="fb fb-green"><div class="fb-title">✦ Rationale generator</div><div class="fb-desc">AI-assisted content for rationale field per question. Faculty review and edit. Shown post-submit on low-stakes exams. Confirmed V1 feature from Nipun session.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--teal)">V2 AI — Jul–Aug 2026</div>
+      <div class="fb fb-teal" style="margin-bottom:7px;"><div class="fb-title">✦ Blueprint-based exam assembly</div><div class="fb-desc">AI selects questions from bank that collectively satisfy all NCCPA blueprint cells. 5-question Bloom's distribution check. Psychometric weighting. Direct quote from Touro: "Lifesaver." Must be live before Cohere Aug 2026.</div></div>
+      <div class="fb fb-teal" style="margin-bottom:7px;"><div class="fb-title">✦ Question gen from slides</div><div class="fb-desc">Faculty uploads lecture slides / course notes → AI generates draft questions. Faculty review, edit, approve. Bloom's levels applied automatically. Confirmed AI use case from Touro ExamSoft meeting.</div></div>
+      <div class="fb fb-teal"><div class="fb-title">✦ LO curriculum mapping</div><div class="fb-desc">Cross-course knowledge dependency mapping. Identifies prerequisite gaps: students failing because an earlier course LO was not assessed. Current accuracy 50–60%, model refinement using acceptance data in progress.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--pink)">V2+ AI — Nov–Dec 2026</div>
+      <div class="fb fb-pink" style="margin-bottom:7px;"><div class="fb-title">✦ PANCE readiness predictor</div><div class="fb-desc">"If student took PANCE today, probability of passing." Based on PACRAT, EOR, EOC scores + NCCPA blueprint coverage. Benchmark 75+ = good passing chance. PA program-specific. Confirmed from Aarti/Vishaka session.</div></div>
+      <div class="fb fb-pink" style="margin-bottom:7px;"><div class="fb-title">✦ AI remediation personalizer</div><div class="fb-desc">Based on where student fails (EOR topic, PACRAT domain) → generate 30-question PDF in PAEA format for that topic. Every student's remediation path is different. Direct Touro request. Saves faculty hours of manual assembly.</div></div>
+      <div class="fb fb-pink"><div class="fb-title">✦ Item anomaly alerts</div><div class="fb-desc">Automated flag when p-value or point biserial falls outside acceptable range. Alert to faculty: "This question may need review." Negative PBis = low-knowledge students getting it right = question validity issue.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ ANALYTICS: PERFORMANCE ══════════════════ -->
+<div class="view" id="v-analytics-perf">
+  <div class="page-title">Student Performance Analytics</div>
+  <div class="page-sub">Individual · Cohort · National benchmark · PA program focus (Touro) · PA student dashboard scope</div>
+
+  <div class="ai-strip">
+    <div class="ai-icon">✦</div>
+    <div class="ai-body"><strong>Why these charts matter:</strong> Program Directors currently maintain "Monster Grids" — Excel files with triple-digit columns synthesizing data from ExamSoft, PAEA, and internal systems. These visualizations replace that workflow entirely and were directly requested in the Aarti/Vishaka session (Mar 17).</div>
+  </div>
+
+  <div class="g4">
+    <div class="mc"><div class="ml">Cohort avg score</div><div class="mv">74%</div><div class="md du">+3pts vs last cohort</div></div>
+    <div class="mc"><div class="ml">EOR benchmark</div><div class="mv" style="color:var(--amber)">77%</div><div class="md dn">1 SD from national mean</div></div>
+    <div class="mc"><div class="ml">Students at risk</div><div class="mv" style="color:var(--coral)">8</div><div class="md dd">Below 76% EOR threshold</div></div>
+    <div class="mc"><div class="ml">PANCE readiness</div><div class="mv" style="color:var(--green)">73%</div><div class="md du">Of cohort ≥ 75 score</div></div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Score distribution — PT cohort 2025 <span class="why">why: reveals if cohort is clustered at risk zone vs. normally distributed</span></div>
+      <div class="ch ch200"><canvas id="scoreDistChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Individual vs. cohort vs. national <span class="why">why: surfaces relative standing across 3 benchmarks simultaneously — key PD ask</span></div>
+      <div class="ch ch200"><canvas id="benchmarkChart"></canvas></div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">EOR performance across all 10 rotations <span class="why">why: shows which rotations consistently produce under-performers — informs curriculum decisions</span></div>
+      <div class="ch ch200"><canvas id="eorRotChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Academic progression heatmap — cohort <span class="why">why: PD needs to see which students are at-risk across which assessment types simultaneously</span><span class="card-sub" style="margin-left:6px;">Green = pass · Amber = borderline · Red = fail</span></div>
+      <div style="overflow-x:auto;">
+        <table class="tbl" style="min-width:400px;">
+          <thead><tr><th>Student</th><th>EOR 1</th><th>EOR 2</th><th>EOR 3</th><th>PACRAT 1</th><th>PACRAT 2</th><th>OSCE</th><th>Risk</th></tr></thead>
+          <tbody id="heatmap-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">NCCPA blueprint coverage — cohort <span class="why">why: shows which content areas are under-assessed — direct accreditation compliance signal</span></div>
+      <div class="ch ch200"><canvas id="nccpaChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">PANCE readiness distribution <span class="why">why: PANCE predictor is the #1 requested feature from Touro — this is what it looks like</span></div>
+      <div class="ch ch200"><canvas id="panceChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ ANALYTICS: ITEM ══════════════════ -->
+<div class="view" id="v-analytics-item">
+  <div class="page-title">Item Analytics Dashboard</div>
+  <div class="page-sub">Question quality metrics · Point biserial · p-value · Discrimination index · Flag review workflow</div>
+
+  <div class="g4">
+    <div class="mc"><div class="ml">Questions flagged</div><div class="mv" style="color:var(--coral)">63</div><div class="md dd">Stale &gt;30 days</div></div>
+    <div class="mc"><div class="ml">Flag rate</div><div class="mv" style="color:var(--amber)">12%</div><div class="md dd">High — review needed</div></div>
+    <div class="mc"><div class="ml">Avg p-value</div><div class="mv">0.64</div><div class="md dn">Acceptable range 0.3–0.8</div></div>
+    <div class="mc"><div class="ml">Negative PBis</div><div class="mv" style="color:var(--coral)">18</div><div class="md dd">Immediate review needed</div></div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">p-value distribution — question bank <span class="why">why: p-value spread reveals if bank is too easy (all high), too hard (all low), or well-calibrated</span></div>
+      <div class="ch ch200"><canvas id="pvalChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Point biserial scatter <span class="why">why: PBis &lt; 0 = low-knowledge students guessing correctly = broken question — needs immediate action</span></div>
+      <div class="ch ch200"><canvas id="pbisChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Flagged questions review queue <span class="card-sub">Sorted by severity</span></div>
+    <div class="tbl-scroll">
+      <table class="tbl">
+        <thead><tr><th>Question ID</th><th>Stem (preview)</th><th>Bloom's</th><th>p-value</th><th>PBis</th><th>Flag reason</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td style="font-family:var(--font-m);color:var(--text3)">Q-1247</td><td>A patient with lumbar fusion presents with...</td><td>Apply</td><td style="color:var(--coral)">0.91</td><td style="color:var(--coral)">-0.12</td><td><span class="sp sp-c">Negative PBis</span></td><td><span class="tag t-gap">Review</span></td></tr>
+          <tr><td style="font-family:var(--font-m);color:var(--text3)">Q-0834</td><td>Which of the following best describes...</td><td>Remember</td><td style="color:var(--amber)">0.88</td><td style="color:var(--amber)">0.08</td><td><span class="sp sp-h">Too easy + low disc.</span></td><td><span class="tag t-warn">Revise</span></td></tr>
+          <tr><td style="font-family:var(--font-m);color:var(--text3)">Q-2156</td><td>During a home visit, a therapist observes...</td><td>Analyze</td><td style="color:var(--coral)">0.18</td><td style="color:var(--teal)">0.42</td><td><span class="sp sp-c">Too difficult</span></td><td><span class="tag t-opp">Calibrate</span></td></tr>
+          <tr><td style="font-family:var(--font-m);color:var(--text3)">Q-1893</td><td>The MOST appropriate outcome measure for...</td><td>Apply</td><td>0.62</td><td style="color:var(--amber)">0.11</td><td><span class="sp sp-h">Low discrimination</span></td><td><span class="tag t-warn">Revise</span></td></tr>
+          <tr><td style="font-family:var(--font-m);color:var(--text3)">Q-0421</td><td>A 67-year-old patient post-hip replacement...</td><td>Analyze</td><td style="color:var(--coral)">-0.04</td><td style="color:var(--coral)">-0.08</td><td><span class="sp sp-c">Negative p + PBis</span></td><td><span class="tag t-gap">Retire</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ ANALYTICS: BLOOM'S ══════════════════ -->
+<div class="view" id="v-analytics-bloom">
+  <div class="page-title">Bloom's Taxonomy Distribution</div>
+  <div class="page-sub">Question bank composition · Assessment balance · Learning objective alignment · Curriculum mapping health</div>
+
+  <div class="ai-strip">
+    <div class="ai-icon">✦</div>
+    <div class="ai-body"><strong>Why Bloom's distribution matters for design:</strong> Touro confirmed they prefer levels 1–3 scale (not 1–5). Higher Bloom's levels (Analyze, Evaluate, Create) consistently have lower p-values — harder questions. This chart helps faculty understand if their exam is cognitively appropriate for the assessment goal. It's also a key accreditation evidence point.</div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Bloom's level distribution — question bank <span class="why">why: shows if bank is over-indexed on low-order thinking (bad for clinical programs)</span></div>
+      <div class="ch ch240"><canvas id="bloomDistChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">p-value by Bloom's level <span class="why">why: validates that higher-order questions are appropriately harder — quality signal</span></div>
+      <div class="ch ch240"><canvas id="bloomPvalChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Bloom's distribution by course <span class="why">why: courses should increase Bloom's level as curriculum progresses — flat lines = curriculum design problem</span></div>
+      <div class="ch ch200"><canvas id="bloomCourseChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Assessment vs. bank coverage gap <span class="why">why: surfaces if faculty are pulling disproportionately from certain Bloom's levels when building exams</span></div>
+      <div class="ch ch200"><canvas id="bloomGapChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ PANCE DASHBOARD ══════════════════ -->
+<div class="view" id="v-analytics-pance">
+  <div class="page-title">PA Student Performance Dashboard</div>
+  <div class="page-sub">PANCE / PACRAT / EOR / OSCE integration · NCCPA blueprint alignment · Touro PA program · Confirmed scope from Aarti/Vishaka session Mar 17</div>
+
+  <div class="ai-strip">
+    <div class="ai-icon">✦</div>
+    <div class="ai-body"><strong>This dashboard was directly designed from the Mar 17 Granola session.</strong> Aarti and Vishaka specified every section. CSV upload is the interim data bridge (5-minute acceptable step initially). PA programs first, then scalable to pharmacy and other disciplines with equivalent standardized exams.</div>
+  </div>
+
+  <div class="g4">
+    <div class="mc"><div class="ml">Term GPA</div><div class="mv">3.42</div><div class="md du">Good standing</div></div>
+    <div class="mc"><div class="ml">Cumulative GPA</div><div class="mv">3.38</div><div class="md du">Above 2.67 threshold</div></div>
+    <div class="mc"><div class="ml">EOR avg (last 5)</div><div class="mv" style="color:var(--amber)">76.2%</div><div class="md dn">Borderline (threshold: 77%)</div></div>
+    <div class="mc"><div class="ml">PANCE readiness</div><div class="mv" style="color:var(--green)">81</div><div class="md du">Score ≥75 → good chance</div></div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">NCCPA blueprint alignment <span class="why">why: maps student's exam history against all NCCPA content areas — PANCE prep completeness</span></div>
+      <div class="ch ch240"><canvas id="nccpaRadarChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Standardized exam progression <span class="why">why: shows trajectory across PACRAT 1→2→EOR series — upward trend = good signal, flat = intervention needed</span></div>
+      <div class="ch ch240"><canvas id="stdExamChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="g3">
+    <div class="card">
+      <div class="card-title">EOR rotation performance <span class="why">why: per-rotation breakdown reveals specialty gaps — informs clinical site assignment decisions</span></div>
+      <div class="ch ch180"><canvas id="eorRadarChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Cohort percentile rank <span class="why">why: PD needs relative standing, not just absolute score — competitive med education context</span></div>
+      <div class="ch ch180"><canvas id="percentileChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Procedure minimums <span class="card-sub">ARC-PA: 3× per type</span><span class="why" style="margin-left:4px;">why: "show me the reds" — Touro direct quote</span></div>
+      <div id="proc-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ COMPETITIVE ══════════════════ -->
+<div class="view" id="v-competitive">
+  <div class="page-title">Competitive Analysis</div>
+  <div class="page-sub">ExamSoft · D2L BrightSpace · Canvas · NBME · Where Exxat wins and where it must close gaps</div>
+
+  <div class="ai-strip">
+    <div class="ai-icon">✦</div>
+    <div class="ai-body"><strong>Strategic framing from PRISM Day 2 (Mar 3):</strong> ExamSoft has comprehensive features but 20-year-old UX. Canvas has better UX but lacks clinical-education specificity. Exxat's target: 30–40% of customers currently using ExamSoft. D2L demo (Mar 4) revealed LMS encroachment on exam management — the competitive window is closing.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Feature parity matrix <span class="why">why: shows where Exxat currently lags and leads — drives prioritization decisions for Nov–Dec launch</span></div>
+    <div class="tbl-scroll">
+      <table class="tbl">
+        <thead><tr><th style="width:180px;">Feature</th><th>Exxat (target)</th><th>ExamSoft</th><th>D2L BrightSpace</th><th>Canvas</th><th>NBME/Pearson</th><th>Exxat advantage?</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Clinical education specificity</strong></td><td><span class="sp sp-m">Full</span></td><td><span class="sp sp-h">Partial</span></td><td><span class="sp sp-c">None</span></td><td><span class="sp sp-c">None</span></td><td><span class="sp sp-c">None</span></td><td><span class="sp sp-m">✓ Strong win</span></td></tr>
+          <tr><td><strong>Multi-campus sharing</strong></td><td><span class="sp sp-m">Flat tagging</span></td><td><span class="sp sp-c">Print/email</span></td><td><span class="sp sp-h">Partial</span></td><td><span class="sp sp-h">Partial</span></td><td>N/A</td><td><span class="sp sp-m">✓ Strong win</span></td></tr>
+          <tr><td><strong>NCCPA blueprint assembly</strong></td><td><span class="sp sp-h">V2 AI</span></td><td><span class="sp sp-c">Manual</span></td><td><span class="sp sp-c">No</span></td><td><span class="sp sp-c">No</span></td><td>N/A</td><td><span class="sp sp-h">Win (when shipped)</span></td></tr>
+          <tr><td><strong>PANCE readiness predictor</strong></td><td><span class="sp sp-h">V2 AI</span></td><td><span class="sp sp-c">No</span></td><td><span class="sp sp-c">No</span></td><td><span class="sp sp-c">No</span></td><td><span class="sp sp-h">Basic</span></td><td><span class="sp sp-m">✓ Differentiated</span></td></tr>
+          <tr><td><strong>Bulk accommodations</strong></td><td><span class="sp sp-h">Planned</span></td><td><span class="sp sp-h">Partial</span></td><td><span class="sp sp-c">Per-quiz manual</span></td><td><span class="sp sp-h">Partial</span></td><td><span class="sp sp-m">Auto</span></td><td><span class="sp sp-h">Win vs. D2L</span></td></tr>
+          <tr><td><strong>Lockdown browser</strong></td><td><span class="sp sp-m">Respondus V1</span></td><td><span class="sp sp-m">Native</span></td><td><span class="sp sp-m">Respondus</span></td><td><span class="sp sp-m">Respondus</span></td><td><span class="sp sp-m">Native</span></td><td><span class="sp sp-m">Parity</span></td></tr>
+          <tr><td><strong>Annotation (highlight/cross)</strong></td><td><span class="sp sp-h">V1</span></td><td><span class="sp sp-c">Limited</span></td><td><span class="sp sp-c">No</span></td><td><span class="sp sp-c">No</span></td><td><span class="sp sp-m">Yes</span></td><td><span class="sp sp-h">Must ship V1</span></td></tr>
+          <tr><td><strong>Item analytics (PBis, p-val)</strong></td><td><span class="sp sp-m">Full</span></td><td><span class="sp sp-m">Full</span></td><td><span class="sp sp-h">Basic</span></td><td><span class="sp sp-h">Basic</span></td><td><span class="sp sp-m">Full</span></td><td><span class="sp sp-m">Parity w/ ExamSoft</span></td></tr>
+          <tr><td><strong>Modern UX (Canvas-level)</strong></td><td><span class="sp sp-m">Target</span></td><td><span class="sp sp-c">20yr old</span></td><td><span class="sp sp-m">Good</span></td><td><span class="sp sp-m">Good</span></td><td><span class="sp sp-h">Functional</span></td><td><span class="sp sp-m">✓ Core differentiator</span></td></tr>
+          <tr><td><strong>AI question generation</strong></td><td><span class="sp sp-h">V2</span></td><td><span class="sp sp-c">Limited</span></td><td><span class="sp sp-c">No</span></td><td><span class="sp sp-c">Limited</span></td><td><span class="sp sp-c">No</span></td><td><span class="sp sp-m">✓ Must ship by Cohere</span></td></tr>
+          <tr><td><strong>Accreditation mapping</strong></td><td><span class="sp sp-m">Deep</span></td><td><span class="sp sp-h">Basic</span></td><td><span class="sp sp-c">None</span></td><td><span class="sp sp-c">None</span></td><td><span class="sp sp-c">None</span></td><td><span class="sp sp-m">✓ Core differentiator</span></td></tr>
+          <tr><td><strong>Win rate (current)</strong></td><td><span class="sp sp-m">40%</span></td><td><span class="sp sp-h">Incumbent</span></td><td><span class="sp sp-h">Growing</span></td><td><span class="sp sp-h">Growing</span></td><td>N/A</td><td><span class="sp sp-h">Needs AI to widen</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="g2" style="margin-top:12px;">
+    <div class="card">
+      <div class="card-title">Win conditions for ExamSoft displacement</div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-opp">Must-win 1</span></div><div class="ins-text">Multi-campus sharing: the #1 Touro pain. Flat tagging architecture is ready. This feature alone justifies migration for 70+ program institutions.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-opp">Must-win 2</span></div><div class="ins-text">Modern UX: ExamSoft's 20-year-old interface is universally criticized. Exxat's React front-end with Canvas-level UX is the primary positioning lever.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-opp">Must-win 3</span></div><div class="ins-text">AI-first analytics: PANCE predictor, blueprint assembly, item anomaly alerts. ExamSoft has analytics but no AI layer. This is the sustainable competitive moat.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-new">Risk to monitor</span></div><div class="ins-text">ExamSoft competitors (Proctorio, Examity) adding eye tracking and enhanced security. If Exxat does not match proctoring security posture by Nov–Dec, clinical programs with strict compliance requirements may stay on ExamSoft.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">D2L BrightSpace competitive gaps <span class="card-sub">LMS encroachment threat</span></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-gap">Threat</span></div><div class="ins-text">D2L now provides exam management that was previously specialized tooling. Post-COVID LMS capabilities expanded significantly. Many universities moving from Blackboard to D2L.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-opp">Exxat counter</span></div><div class="ins-text">D2L cannot do: clinical education competency mapping, NCCPA blueprint alignment, PANCE readiness prediction, accreditation reporting. These are Exxat's defensible differentiators.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-gap">D2L gap to exploit</span></div><div class="ins-text">Bulk accommodation assignment: D2L requires individual setup per student per quiz. 7 students × 10 quizzes = 70 manual actions (confirmed from demo). Exxat bulk assignment is a concrete selling point.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-new">Strategic signal</span></div><div class="ins-text">"Integration strategy may be more viable than replacement strategy" — D2L demo takeaway. Exxat's value is in clinical-specific intelligence layered on top of LMS, not competing with LMS on general features.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ ROADMAP ══════════════════ -->
+<div class="view" id="v-roadmap">
+  <div class="page-title">Exam Management Roadmap</div>
+  <div class="page-sub">Q1 2026 → Nov–Dec 2026 launch · Sourced from Exam stand-up Mar 19 + PRISM + Nipun sessions</div>
+
+  <div class="g4">
+    <div class="mc"><div class="ml">Next milestone</div><div class="mv" style="font-size:16px;color:var(--accent)">Apr 17</div><div class="md dn">3 persona demo</div></div>
+    <div class="mc"><div class="ml">UNF pilot</div><div class="mv" style="font-size:16px;color:var(--amber)">July '26</div><div class="md dn">Accessibility V0 complete</div></div>
+    <div class="mc"><div class="ml">Cohere conference</div><div class="mv" style="font-size:16px;color:var(--teal)">Aug '26</div><div class="md dn">AI features live demo</div></div>
+    <div class="mc"><div class="ml">ExamSoft-competitive</div><div class="mv" style="font-size:16px;color:var(--coral)">Nov–Dec</div><div class="md dd">Full AI + security launch</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Delivery phases — swimlane view <span class="why">why: shows parallel workstreams and dependencies for Arun / Vishaka planning</span></div>
+    <div style="overflow-x:auto;">
+      <table class="tbl" style="min-width:700px;">
+        <thead>
+          <tr>
+            <th style="width:140px;">Workstream</th>
+            <th>Q1 (Jan–Mar)</th>
+            <th>Q2 (Apr–Jun)</th>
+            <th>Q3 (Jul–Sep)</th>
+            <th>Q4 (Oct–Dec)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong style="color:var(--green)">Student experience</strong></td>
+            <td>Calculator added · Basic interface in UAD</td>
+            <td>April 17 demo · Accessibility V0 complete</td>
+            <td>UNF pilot July · Annotation V1</td>
+            <td>Full feature set · Adaptive testing V2</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--accent)">Question bank</strong></td>
+            <td>Architecture decided · Flat tagging scoped</td>
+            <td>Nipun stories + Romit mockups · Entry points designed</td>
+            <td>Multi-campus sharing live · Review workflow</td>
+            <td>Import migration tool · AI tagging live</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--amber)">Assessment creation</strong></td>
+            <td>Admin scoped · Distribution screen</td>
+            <td>Admin demo Apr 17 · Bulk accommodations</td>
+            <td>Blueprint assembly manual V1</td>
+            <td>AI blueprint assembly V2 · Respondus integration</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--teal)">AI features</strong></td>
+            <td>Architecture decided — React confirmed</td>
+            <td>AI blocked (adoption concerns) · Architecture only</td>
+            <td>Bloom's tag assist · Rationale gen · LO mapping</td>
+            <td>PANCE predictor · Question gen · Blueprint AI · Remediation</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--coral)">Analytics</strong></td>
+            <td>Basic reporting scoped · Manual export</td>
+            <td>Item analytics V1 · p-value · PBis</td>
+            <td>PA dashboard CSV import · Cohort view</td>
+            <td>NCCPA alignment · PANCE readiness · Monster Grid replacement</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--pink)">Accessibility</strong></td>
+            <td>Audit started · Navigator repositioned</td>
+            <td>V0 complete: zoom, contrast, OSK, keyboard nav, bulk accomm</td>
+            <td>ACR validation · V1: voice, TTS</td>
+            <td>Annotation V1 · WCAG 2.1 AA certification</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ DESIGN DECISIONS ══════════════════ -->
+<div class="view" id="v-design-decisions">
+  <div class="page-title">Design Decisions Log</div>
+  <div class="page-sub">Pivotal decisions with rationale, tradeoffs, and Granola evidence · Staff-level case study material</div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Decision 1: Flat tagging over folder hierarchy</div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-new">Decision</span></div><div class="ins-text">Moved away from ExamSoft's rigid folder structure (master bank → live courses copy). Adopted flat tagging with Smart Views.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-acc">Rationale</span></div><div class="ins-text">ExamSoft folder structure fails cross-course knowledge mapping. Students fail because prerequisite knowledge gaps from other courses aren't tracked. Folders also break multi-campus sharing. Flat tagging with ~20 tags per question enables cross-course, cross-campus, and cross-cohort analytics.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-gap">Tradeoff considered</span></div><div class="ins-text">Folders feel familiar to faculty. Risk: cognitive overhead of tagging deters casual users. Mitigation: AI handles tagging on save. Smart Views recreate the folder UX on top of flat architecture.</div></div>
+      <div class="ins-src">Platform strategy · Mar 4 · Q-Bank architecture · Mar 12</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Decision 2: Platform-embedded accessibility (no 3rd-party)</div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-new">Decision</span></div><div class="ins-text">All accessibility features must be built into the exam platform. No external tools, screen readers, or OS-level affordances.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-acc">Rationale</span></div><div class="ins-text">Lockdown browser blocks all external tools. This is not a design preference — it is the only compliant path. Pearson Education model (GRE, SAT, TOEFL) proves it is achievable: their full accessibility suite is platform-embedded.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-gap">Tradeoff considered</span></div><div class="ins-text">Building custom OSK, zoom, TTS is significantly more expensive than relying on OS tools. Phased delivery (V0 → V1) manages this cost. V0 ships minimum viable accessibility for UNF pilot compliance. Full suite in V1.</div></div>
+      <div class="ins-src">Accessibility session · Mar 16 · Nipun roadmap · Mar 11</div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Decision 3: React front-end, AI-first architecture</div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-new">Decision</span></div><div class="ins-text">React front-end confirmed for entire app (admin + student). AI-first design philosophy: every new screen must consider AI integration upfront.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-acc">Rationale</span></div><div class="ins-text">Retrofitting AI into existing functionality is architectural debt. The PRISM Day 1 insight: AI must be designed in from scratch, not inserted. This is Exxat's primary competitive moat vs. ExamSoft (which cannot AI-first its 20-year-old codebase).</div></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-gap">Tradeoff considered</span></div><div class="ins-text">AI features blocked in Phase 1 due to faculty adoption concerns. Risk of over-promising AI timeline. Mitigation: Phase 1 is AI-architecture-ready but AI-features-off. Phase 2 (May sprint) turns them on.</div></div>
+      <div class="ins-src">PRISM Day 2 · Mar 3 · Exam stand-up · Mar 19</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Decision 4: Assessment creation as primary workflow</div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-new">Decision</span></div><div class="ins-text">Current wireframe described as "too database-heavy." Assessment creation must be the primary workflow, not question bank management.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-acc">Rationale</span></div><div class="ins-text">Faculty's primary job is building and delivering exams, not curating a database. The question bank is infrastructure that supports assessment creation, not the other way around. 3 entry points to questions: bank direct, within course, during exam assembly. Assessment creation surfaces questions — not the other way.</div></div>
+      <div class="ins"><div class="ins-meta"><span class="tag t-gap">Tradeoff considered</span></div><div class="ins-text">Power users (program-level) want to manage the bank as a primary workflow (HOD, curriculum director). Progressive disclosure: assessment creation as default entry; bank management in "advanced" or dedicated bank view for power users.</div></div>
+      <div class="ins-src">Q-Bank multi-campus · Mar 12 · Platform strategy · Mar 4</div>
+    </div>
+  </div>
+</div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ─ Nav ─
+var P={
+  'overview':{t:'Product Overview',tag:'Granola · 9 sessions'},
+  'flow-student':{t:'Student Exam Flow',tag:'V0 · UNF Jul 2026'},
+  'flow-faculty':{t:'Faculty Q-Bank Flow',tag:'Smart Views · Versioning'},
+  'flow-admin':{t:'Admin Assessment Flow',tag:'Configure · Distribute'},
+  'feat-qbank':{t:'Question Bank Features',tag:'Create · Tag · Share · Analyze'},
+  'feat-access':{t:'Accessibility Features',tag:'WCAG 2.1 AA · Critical'},
+  'feat-ai':{t:'AI Feature Layer',tag:'V1–V2+ · May–Nov 2026'},
+  'analytics-perf':{t:'Student Performance',tag:'Individual · Cohort · National'},
+  'analytics-item':{t:'Item Analytics',tag:'p-value · PBis · Flags'},
+  'analytics-bloom':{t:"Bloom's Distribution",tag:'Curriculum balance'},
+  'analytics-pance':{t:'PA Student Dashboard',tag:'PANCE · EOR · NCCPA'},
+  'competitive':{t:'Competitive Analysis',tag:'ExamSoft · D2L · Canvas'},
+  'roadmap':{t:'Roadmap 2026',tag:'Q1→Q4'},
+  'design-decisions':{t:'Design Decisions Log',tag:'4 pivotal decisions'}
+};
+
+function nav(id, el) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  var v=document.getElementById('v-'+id);
+  if(v) v.classList.add('active');
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  if(el) el.classList.add('active');
+  var p=P[id]||{t:id,tag:''};
+  document.getElementById('ptitle').textContent=p.t;
+  document.getElementById('ptag').textContent=p.tag;
+  initCharts(id);
+}
+
+// ─ Chart helpers ─ defined once outside initCharts to avoid re-declaration
+var chartInited = {};
+
+// Base scale configs — defined as functions to avoid shared reference mutation
+function xScale() {
+  return {grid:{color:'rgba(255,255,255,0.03)',borderColor:'transparent'},ticks:{color:'#5c5a57',font:{size:10}}};
+}
+function yScale() {
+  return {grid:{color:'rgba(255,255,255,0.03)',borderColor:'transparent'},ticks:{color:'#5c5a57',font:{size:10}}};
+}
+function baseOpts(extraPlugins, extraScales) {
+  var opts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: Object.assign({legend:{display:false}}, extraPlugins||{}),
+    scales: Object.assign({x:xScale(),y:yScale()}, extraScales||{})
+  };
+  return opts;
+}
+function legendOpts() {
+  return {legend:{display:true,labels:{color:'#5c5a57',boxWidth:10,font:{size:10}}}};
+}
+
+function mkChart(canvasId, type, data, opts) {
+  var el = document.getElementById(canvasId);
+  if (!el) return;
+  // Destroy existing chart on canvas if any (prevents "Canvas already in use" error)
+  var existing = Chart.getChart(el);
+  if (existing) existing.destroy();
+  new Chart(el, {type:type, data:data, options:opts||baseOpts()});
+}
+
+function initCharts(viewId) {
+  if (chartInited[viewId]) return;
+  chartInited[viewId] = true;
+
+  if (viewId === 'analytics-perf') {
+    mkChart('scoreDistChart','bar',{
+      labels:['50–59','60–69','70–79','80–89','90–100'],
+      datasets:[
+        {label:'This cohort',data:[3,8,22,34,18],backgroundColor:'rgba(139,127,245,0.6)',borderRadius:5},
+        {label:'National avg',data:[2,6,18,30,22],backgroundColor:'rgba(46,196,160,0.35)',borderRadius:5}
+      ]
+    }, baseOpts(legendOpts()));
+
+    mkChart('benchmarkChart','bar',{
+      labels:['Student A','Student B','Student C','Student D','Student E','Student F'],
+      datasets:[
+        {label:'Individual',data:[82,71,88,65,79,74],backgroundColor:'rgba(139,127,245,0.7)',borderRadius:4},
+        {label:'Cohort avg',data:[74,74,74,74,74,74],type:'line',borderColor:'rgba(46,196,160,0.8)',borderWidth:2,pointRadius:0},
+        {label:'National',data:[77,77,77,77,77,77],type:'line',borderColor:'rgba(245,166,35,0.7)',borderWidth:2,pointRadius:0,borderDash:[4,3]}
+      ]
+    }, baseOpts(legendOpts()));
+
+    mkChart('eorRotChart','line',{
+      labels:['EOR 1','EOR 2','EOR 3','EOR 4','EOR 5','EOR 6','EOR 7','EOR 8','EOR 9','EOR 10'],
+      datasets:[
+        {label:'Cohort avg',data:[74,71,78,76,80,73,82,77,79,81],borderColor:'#8b7ff5',backgroundColor:'rgba(139,127,245,0.08)',fill:true,tension:0.4,pointBackgroundColor:'#8b7ff5',pointRadius:3},
+        {label:'Benchmark 77%',data:[77,77,77,77,77,77,77,77,77,77],borderColor:'rgba(245,166,35,0.6)',borderDash:[5,3],pointRadius:0}
+      ]
+    }, baseOpts(legendOpts()));
+
+    mkChart('nccpaChart','bar',{
+      labels:['Cardio','Pulm','GI','Neuro','MSK','Derm','Psych','Repro','Endocrine','ID'],
+      datasets:[{label:'Coverage %',data:[88,72,80,65,91,58,74,69,82,76],backgroundColor:'rgba(120,170,245,0.6)',borderRadius:4}]
+    }, baseOpts());
+
+    mkChart('panceChart','bar',{
+      labels:['<60','60–65','65–70','70–75','75–80','80–85','85+'],
+      datasets:[{label:'Students',data:[1,2,4,8,14,10,5],backgroundColor:['rgba(232,96,74,0.7)','rgba(232,96,74,0.7)','rgba(245,166,35,0.7)','rgba(245,166,35,0.7)','rgba(76,175,125,0.7)','rgba(76,175,125,0.7)','rgba(46,196,160,0.7)'],borderRadius:4}]
+    }, baseOpts());
+
+    // Risk heatmap table
+    var students=[
+      {n:'Student 01',scores:[82,78,85,74,79,88],risk:'low'},
+      {n:'Student 02',scores:[71,68,65,62,70,72],risk:'high'},
+      {n:'Student 03',scores:[88,90,86,88,91,95],risk:'low'},
+      {n:'Student 04',scores:[65,61,63,58,67,70],risk:'critical'},
+      {n:'Student 05',scores:[79,76,80,75,78,82],risk:'low'},
+      {n:'Student 06',scores:[74,72,70,71,73,78],risk:'medium'}
+    ];
+    var tbody = document.getElementById('heatmap-tbody');
+    if (tbody) {
+      var riskColors = {low:'var(--green)',medium:'var(--amber)',high:'var(--coral)',critical:'#ff3b30'};
+      students.forEach(function(s) {
+        var tr = document.createElement('tr');
+        var cells = '<td style="font-size:11px;color:var(--text2)">' + s.n + '</td>';
+        s.scores.forEach(function(v) {
+          var bg = v>=80 ? 'rgba(76,175,125,0.2)' : v>=70 ? 'rgba(245,166,35,0.2)' : 'rgba(232,96,74,0.2)';
+          var col = v>=80 ? 'var(--green)' : v>=70 ? 'var(--amber)' : 'var(--coral)';
+          cells += '<td style="background:'+bg+';color:'+col+';font-weight:500;font-family:var(--font-m)">'+v+'%</td>';
+        });
+        cells += '<td><span class="sdot" style="background:'+riskColors[s.risk]+'"></span></td>';
+        tr.innerHTML = cells;
+        tbody.appendChild(tr);
+      });
+    }
+  }
+
+  if (viewId === 'analytics-item') {
+    mkChart('pvalChart','bar',{
+      labels:['0.0–0.2','0.2–0.4','0.4–0.6','0.6–0.8','0.8–1.0'],
+      datasets:[{label:'Questions',data:[18,42,156,280,98],backgroundColor:['rgba(232,96,74,0.7)','rgba(245,166,35,0.7)','rgba(76,175,125,0.6)','rgba(46,196,160,0.6)','rgba(245,166,35,0.7)'],borderRadius:4}]
+    }, baseOpts());
+
+    mkChart('pbisChart','scatter',{
+      datasets:[
+        {label:'Questions',data:Array.from({length:80},function(){return{x:+(Math.random()*0.93+0.02).toFixed(2),y:+(Math.random()*0.8-0.05).toFixed(2)};}),backgroundColor:'rgba(139,127,245,0.5)',pointRadius:4},
+        {label:'Flagged (neg PBis)',data:Array.from({length:12},function(){return{x:+(Math.random()*0.55+0.25).toFixed(2),y:+(-Math.random()*0.18).toFixed(2)};}),backgroundColor:'rgba(232,96,74,0.85)',pointRadius:6}
+      ]
+    }, baseOpts(legendOpts(), {
+      x:{grid:{color:'rgba(255,255,255,0.03)',borderColor:'transparent'},ticks:{color:'#5c5a57',font:{size:10}},min:0,max:1,title:{display:true,text:'p-value',color:'#5c5a57',font:{size:10}}},
+      y:{grid:{color:'rgba(255,255,255,0.03)',borderColor:'transparent'},ticks:{color:'#5c5a57',font:{size:10}},min:-0.25,max:1,title:{display:true,text:'Point Biserial',color:'#5c5a57',font:{size:10}}}
+    }));
+  }
+
+  if (viewId === 'analytics-bloom') {
+    mkChart('bloomDistChart','doughnut',{
+      labels:['Remember','Understand','Apply','Analyze','Evaluate','Create'],
+      datasets:[{data:[18,24,32,16,7,3],backgroundColor:['rgba(76,175,125,0.7)','rgba(46,196,160,0.7)','rgba(139,127,245,0.7)','rgba(120,170,245,0.7)','rgba(245,166,35,0.7)','rgba(232,96,74,0.7)'],hoverOffset:4}]
+    },{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{color:'#5c5a57',boxWidth:10,font:{size:10}}}}});
+
+    mkChart('bloomPvalChart','bar',{
+      labels:['Remember','Understand','Apply','Analyze','Evaluate','Create'],
+      datasets:[{label:'Avg p-value',data:[0.82,0.74,0.61,0.52,0.45,0.38],backgroundColor:['rgba(76,175,125,0.7)','rgba(76,175,125,0.7)','rgba(245,166,35,0.7)','rgba(245,166,35,0.7)','rgba(232,96,74,0.7)','rgba(232,96,74,0.7)'],borderRadius:4}]
+    }, baseOpts({}, {
+      x:{grid:{color:'rgba(255,255,255,0.03)',borderColor:'transparent'},ticks:{color:'#5c5a57',font:{size:10}},min:0,max:1},
+      y:{grid:{color:'rgba(255,255,255,0.03)',borderColor:'transparent'},ticks:{color:'#5c5a57',font:{size:10}}}
+    }));
+    // override indexAxis after options built
+    var bpOpts = baseOpts({}, {
+      x:{grid:{color:'rgba(255,255,255,0.03)',borderColor:'transparent'},ticks:{color:'#5c5a57',font:{size:10}},min:0,max:1},
+      y:{grid:{color:'rgba(255,255,255,0.03)',borderColor:'transparent'},ticks:{color:'#5c5a57',font:{size:10}}}
+    });
+    bpOpts.indexAxis = 'y';
+    var bpEl = document.getElementById('bloomPvalChart');
+    if (bpEl) {
+      var ex = Chart.getChart(bpEl); if(ex) ex.destroy();
+      new Chart(bpEl,{type:'bar',data:{labels:['Remember','Understand','Apply','Analyze','Evaluate','Create'],datasets:[{label:'Avg p-value',data:[0.82,0.74,0.61,0.52,0.45,0.38],backgroundColor:['rgba(76,175,125,0.7)','rgba(76,175,125,0.7)','rgba(245,166,35,0.7)','rgba(245,166,35,0.7)','rgba(232,96,74,0.7)','rgba(232,96,74,0.7)'],borderRadius:4}]},options:bpOpts});
+    }
+
+    mkChart('bloomCourseChart','line',{
+      labels:['Year 1 Q1','Year 1 Q2','Year 2 Q1','Year 2 Q2','Year 3 Q1'],
+      datasets:[
+        {label:"Avg Bloom's level",data:[1.4,1.8,2.2,2.6,2.9],borderColor:'#8b7ff5',backgroundColor:'rgba(139,127,245,0.08)',fill:true,tension:0.4,pointBackgroundColor:'#8b7ff5',pointRadius:4},
+        {label:'Target progression',data:[1.5,2.0,2.5,2.8,3.0],borderColor:'rgba(46,196,160,0.5)',borderDash:[4,3],pointRadius:0}
+      ]
+    }, baseOpts(legendOpts(), {
+      x:xScale(),
+      y:{grid:{color:'rgba(255,255,255,0.03)',borderColor:'transparent'},ticks:{color:'#5c5a57',font:{size:10}},min:1,max:3.5}
+    }));
+
+    mkChart('bloomGapChart','bar',{
+      labels:['Remember','Understand','Apply','Analyze','Evaluate','Create'],
+      datasets:[
+        {label:'Bank %',data:[18,24,32,16,7,3],backgroundColor:'rgba(139,127,245,0.5)',borderRadius:4},
+        {label:'Exam pull %',data:[12,18,40,20,8,2],backgroundColor:'rgba(245,166,35,0.5)',borderRadius:4}
+      ]
+    }, baseOpts(legendOpts()));
+  }
+
+  if (viewId === 'analytics-pance') {
+    var radarOpts = {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{color:'#5c5a57',boxWidth:10,font:{size:10}}}},
+      scales:{r:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#3a3a3a',backdropColor:'transparent',font:{size:9}},pointLabels:{color:'#5c5a57',font:{size:9}},min:0,max:100}}
+    };
+    mkChart('nccpaRadarChart','radar',{
+      labels:['Cardiovascular','Pulmonology','Gastro','Neurology','MSK','Derm','Psychiatry','Repro','Endocrine','Infect. Dis.'],
+      datasets:[
+        {label:'This student',data:[85,72,80,68,91,60,74,70,82,78],borderColor:'#8b7ff5',backgroundColor:'rgba(139,127,245,0.15)',pointBackgroundColor:'#8b7ff5',pointRadius:3},
+        {label:'PANCE blueprint',data:[80,80,80,80,80,80,80,80,80,80],borderColor:'rgba(46,196,160,0.4)',borderDash:[4,3],backgroundColor:'transparent',pointRadius:0}
+      ]
+    }, radarOpts);
+
+    mkChart('stdExamChart','line',{
+      labels:['PACRAT 1','PACRAT 2','EOR 1','EOR 2','EOR 3','EOR 4','EOR 5','EOR 6'],
+      datasets:[
+        {label:'Student score',data:[68,72,74,71,78,76,80,77],borderColor:'#8b7ff5',backgroundColor:'rgba(139,127,245,0.1)',fill:true,tension:0.4,pointBackgroundColor:'#8b7ff5',pointRadius:4},
+        {label:'Benchmark',data:[72,72,77,77,77,77,77,77],borderColor:'rgba(245,166,35,0.6)',borderDash:[4,3],pointRadius:0}
+      ]
+    }, baseOpts(legendOpts()));
+
+    var eorRadarOpts = {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{r:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#3a3a3a',backdropColor:'transparent',font:{size:8}},pointLabels:{color:'#5c5a57',font:{size:8}},min:60,max:90}}
+    };
+    mkChart('eorRadarChart','radar',{
+      labels:['Fam Medicine','Emergency','Internal Med','Pediatrics','OB/GYN','Surgery','Psychiatry','Elective'],
+      datasets:[
+        {label:'Score',data:[79,74,82,76,71,68,80,85],borderColor:'#2ec4a0',backgroundColor:'rgba(46,196,160,0.12)',pointBackgroundColor:'#2ec4a0',pointRadius:3},
+        {label:'Threshold 77',data:[77,77,77,77,77,77,77,77],borderColor:'rgba(232,96,74,0.4)',borderDash:[4,3],backgroundColor:'transparent',pointRadius:0}
+      ]
+    }, eorRadarOpts);
+
+    mkChart('percentileChart','bar',{
+      labels:['10th','25th','50th','75th','90th'],
+      datasets:[{label:'National percentile',data:[62,69,74,80,86],backgroundColor:'rgba(120,170,245,0.6)',borderRadius:4}]
+    }, baseOpts());
+
+    // Procedure tracker
+    var procs = [
+      {name:'Venipuncture',done:4,req:3},
+      {name:'IV insertion',done:2,req:3},
+      {name:'IM injection',done:5,req:3},
+      {name:'Suturing',done:1,req:3},
+      {name:'Foley catheter',done:3,req:3},
+      {name:'Wound care',done:4,req:3},
+      {name:'EKG interpretation',done:2,req:3}
+    ];
+    var pl = document.getElementById('proc-list');
+    if (pl) {
+      procs.forEach(function(p) {
+        var ok = p.done >= p.req;
+        var pct = Math.min(Math.round(p.done/p.req*100), 100);
+        var div = document.createElement('div');
+        div.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06)';
+        div.innerHTML =
+          '<div style="flex:1;font-size:11px;color:#9a9690">' + p.name + '</div>' +
+          '<div style="font-size:10px;font-family:DM Mono,monospace;color:' + (ok?'#4caf7d':'#e8604a') + '">' + p.done + '/' + p.req + '</div>' +
+          '<div style="width:56px;height:5px;background:#26262e;border-radius:3px;overflow:hidden">' +
+            '<div style="width:' + pct + '%;height:100%;background:' + (ok?'#4caf7d':'#e8604a') + ';border-radius:3px"></div>' +
+          '</div>' +
+          '<span style="font-size:9px;padding:2px 5px;border-radius:3px;background:' + (ok?'rgba(76,175,125,0.15)':'rgba(232,96,74,0.15)') + ';color:' + (ok?'#4caf7d':'#e8604a') + '">' + (ok?'✓':'⚠') + '</span>';
+        pl.appendChild(div);
+      });
+    }
+  }
+}
+
+// init overview on load (no charts on overview, safe to call)
+initCharts('overview');
+</script>
+</body>
+</html>

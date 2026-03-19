@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Insight Hub — Romit Soley</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg: #0f0f11;
+  --bg2: #16161a;
+  --bg3: #1e1e24;
+  --bg4: #26262e;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #e8e6df;
+  --text2: #9a9690;
+  --text3: #5c5a57;
+  --accent: #8b7ff5;
+  --accent2: #6c62d4;
+  --accent-glow: rgba(139,127,245,0.15);
+  --teal: #2ec4a0;
+  --teal-bg: rgba(46,196,160,0.1);
+  --amber: #f5a623;
+  --amber-bg: rgba(245,166,35,0.1);
+  --coral: #e8604a;
+  --coral-bg: rgba(232,96,74,0.1);
+  --green: #4caf7d;
+  --green-bg: rgba(76,175,125,0.1);
+  --font-display: 'DM Serif Display', serif;
+  --font-body: 'Instrument Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --sidebar-w: 228px;
+  --topbar-h: 52px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: var(--font-body); background: var(--bg); color: var(--text); font-size: 13px; line-height: 1.5; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
+button { font-family: var(--font-body); cursor: pointer; border: none; outline: none; }
+input, textarea, select { font-family: var(--font-body); outline: none; }
+
+/* ── Layout ── */
+.app { display: flex; height: 100vh; overflow: hidden; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: var(--sidebar-w); min-width: var(--sidebar-w);
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 18px 16px 14px;
+  display: flex; align-items: center; gap: 9px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-mark {
+  width: 26px; height: 26px; border-radius: 7px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: #fff;
+}
+.logo-text { font-family: var(--font-display); font-size: 15px; color: var(--text); letter-spacing: -0.01em; }
+.logo-sub { font-size: 10px; color: var(--text3); font-family: var(--font-mono); }
+
+.sidebar-section {
+  padding: 16px 14px 4px;
+  font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text3); font-weight: 500;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px; margin: 1px 6px;
+  border-radius: 7px; cursor: pointer;
+  color: var(--text2); font-size: 12px;
+  transition: all 0.15s;
+  position: relative;
+}
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active { background: var(--accent-glow); color: var(--accent); }
+.nav-item.active::before {
+  content: '';
+  position: absolute; left: -6px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 16px; border-radius: 2px; background: var(--accent);
+}
+.nav-icon { width: 14px; height: 14px; opacity: 0.6; flex-shrink: 0; }
+.nav-item.active .nav-icon { opacity: 1; }
+.nav-badge {
+  margin-left: auto; font-size: 9px; padding: 2px 6px;
+  border-radius: 10px; font-weight: 500; font-family: var(--font-mono);
+}
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-amber { background: var(--amber-bg); color: var(--amber); }
+.badge-blue { background: rgba(100,160,240,0.12); color: #78aaf5; }
+.badge-new { background: var(--teal-bg); color: var(--teal); }
+
+.sidebar-bottom {
+  margin-top: auto; padding: 12px 10px;
+  border-top: 1px solid var(--border);
+}
+.user-row { display: flex; align-items: center; gap: 8px; }
+.user-av {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--teal));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 600; color: #fff;
+}
+.user-name { font-size: 11px; font-weight: 500; color: var(--text); }
+.user-role { font-size: 9px; color: var(--text3); }
+
+/* ── Main ── */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Topbar */
+.topbar {
+  height: var(--topbar-h);
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 22px;
+  flex-shrink: 0;
+}
+.topbar-left { display: flex; align-items: center; gap: 8px; }
+.breadcrumb { font-size: 11px; color: var(--text3); display: flex; align-items: center; gap: 5px; }
+.breadcrumb span { color: var(--text); font-weight: 500; font-size: 12px; }
+.bc-sep { color: var(--text3); }
+.topbar-right { display: flex; gap: 6px; align-items: center; }
+.tb-btn {
+  padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 500;
+  background: var(--bg3); color: var(--text2);
+  border: 1px solid var(--border);
+  transition: all 0.15s;
+}
+.tb-btn:hover { background: var(--bg4); color: var(--text); border-color: var(--border2); }
+.tb-btn.primary {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.tb-btn.primary:hover { background: var(--accent2); }
+.tb-tag {
+  font-size: 9px; padding: 2px 7px; border-radius: 4px; font-family: var(--font-mono);
+  background: var(--coral-bg); color: var(--coral);
+}
+
+/* Content */
+.content { flex: 1; overflow-y: auto; padding: 22px 24px; }
+
+/* ── Views ── */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── Section heading ── */
+.section-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 18px; }
+.section-title { font-family: var(--font-display); font-size: 22px; color: var(--text); letter-spacing: -0.02em; }
+.section-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.section-actions { display: flex; gap: 6px; }
+
+/* ── Metric cards ── */
+.metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+.metric-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+  transition: border-color 0.2s;
+}
+.metric-card:hover { border-color: var(--border2); }
+.metric-label { font-size: 10px; color: var(--text3); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+.metric-val { font-size: 26px; font-weight: 600; color: var(--text); font-family: var(--font-mono); line-height: 1; }
+.metric-delta { font-size: 10px; margin-top: 5px; }
+.delta-up { color: var(--green); }
+.delta-dn { color: var(--coral); }
+.delta-neutral { color: var(--text3); }
+
+/* ── Two col ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.col-wide { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; margin-bottom: 14px; }
+
+/* ── Card ── */
+.card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 16px 18px;
+  transition: border-color 0.2s;
+}
+.card:hover { border-color: var(--border2); }
+.card-title {
+  font-size: 11px; font-weight: 600; color: var(--text);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;
+}
+.card-title-plain { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 12px; }
+.card-sub { font-size: 10px; color: var(--text3); font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+/* ── AI strip ── */
+.ai-strip {
+  background: var(--accent-glow);
+  border: 1px solid rgba(139,127,245,0.25);
+  border-radius: var(--radius); padding: 12px 14px;
+  display: flex; gap: 10px; margin-bottom: 18px;
+  align-items: flex-start;
+}
+.ai-icon {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: var(--accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; flex-shrink: 0;
+}
+.ai-text { font-size: 11px; color: var(--text2); line-height: 1.55; flex: 1; }
+.ai-text strong { color: var(--accent); font-weight: 500; }
+.ai-actions { display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+.ai-btn {
+  padding: 4px 10px; font-size: 10px; border-radius: 5px;
+  background: rgba(139,127,245,0.15); color: var(--accent);
+  border: 1px solid rgba(139,127,245,0.3);
+  transition: all 0.15s;
+}
+.ai-btn:hover { background: rgba(139,127,245,0.25); }
+
+/* ── Tabs ── */
+.tabs { display: flex; gap: 2px; margin-bottom: 18px; border-bottom: 1px solid var(--border); }
+.tab {
+  padding: 8px 14px; font-size: 12px; cursor: pointer;
+  color: var(--text3); border-bottom: 2px solid transparent;
+  transition: all 0.15s; margin-bottom: -1px;
+}
+.tab:hover { color: var(--text2); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+
+/* ── Insight items ── */
+.insight-item {
+  padding: 11px 0; border-bottom: 1px solid var(--border);
+}
+.insight-item:last-child { border-bottom: none; }
+.insight-meta { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; flex-wrap: wrap; }
+.tag { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 9px; font-weight: 500; }
+.tag-theme { background: rgba(139,127,245,0.15); color: var(--accent); }
+.tag-gap { background: var(--coral-bg); color: var(--coral); }
+.tag-opp { background: var(--teal-bg); color: var(--teal); }
+.tag-persona { background: rgba(100,160,240,0.12); color: #78aaf5; }
+.tag-platform { background: var(--amber-bg); color: var(--amber); }
+.tag-new { background: var(--green-bg); color: var(--green); }
+.insight-text { font-size: 12px; color: var(--text2); line-height: 1.55; }
+.insight-source { font-size: 10px; color: var(--text3); margin-top: 4px; font-family: var(--font-mono); }
+
+/* ── Feature boxes ── */
+.feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.feat-box { padding: 11px 12px; border-radius: 8px; border: 1px solid var(--border); }
+.feat-box:hover { border-color: var(--border2); }
+.feat-title { font-size: 11px; font-weight: 500; margin-bottom: 3px; }
+.feat-desc { font-size: 10px; color: var(--text3); line-height: 1.45; }
+.feat-accent { border-color: rgba(139,127,245,0.2); background: rgba(139,127,245,0.05); }
+.feat-accent .feat-title { color: var(--accent); }
+.feat-teal { border-color: rgba(46,196,160,0.2); background: rgba(46,196,160,0.04); }
+.feat-teal .feat-title { color: var(--teal); }
+.feat-amber { border-color: rgba(245,166,35,0.2); background: rgba(245,166,35,0.04); }
+.feat-amber .feat-title { color: var(--amber); }
+.feat-coral { border-color: rgba(232,96,74,0.2); background: rgba(232,96,74,0.04); }
+.feat-coral .feat-title { color: var(--coral); }
+
+/* ── Persona matrix ── */
+.matrix { width: 100%; border-collapse: collapse; font-size: 11px; }
+.matrix th {
+  padding: 7px 10px; text-align: left;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--text3);
+  border-bottom: 1px solid var(--border);
+}
+.matrix td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.matrix tr:last-child td { border-bottom: none; }
+.matrix tr:hover td { background: var(--bg3); }
+.pname-cell { font-weight: 500; color: var(--text); font-size: 12px; }
+.prole-cell { font-size: 10px; color: var(--text3); margin-top: 1px; }
+.sev-pill { display: inline-flex; padding: 2px 7px; border-radius: 4px; font-size: 9px; font-weight: 500; }
+.sev-c { background: var(--coral-bg); color: var(--coral); }
+.sev-h { background: var(--amber-bg); color: var(--amber); }
+.sev-m { background: var(--green-bg); color: var(--green); }
+.sev-n { background: var(--bg3); color: var(--text3); }
+.cross { display: inline-flex; align-items: center; gap: 3px; margin-top: 4px; padding: 2px 6px; border-radius: 3px; background: rgba(139,127,245,0.1); font-size: 9px; color: var(--accent); }
+.ai-sig { display: inline-flex; align-items: center; gap: 3px; margin-top:3px; padding: 2px 6px; border-radius: 3px; background: var(--teal-bg); font-size: 9px; color: var(--teal); }
+.new-sig { display: inline-flex; align-items: center; gap: 3px; margin-top:3px; padding: 2px 6px; border-radius: 3px; background: var(--amber-bg); font-size: 9px; color: var(--amber); }
+
+/* ── Blueprint ── */
+.bp-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+.bp-table th { padding: 7px 9px; background: var(--bg3); font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text3); border: 1px solid var(--border); font-weight: 600; }
+.bp-table td { padding: 8px 9px; border: 1px solid var(--border); color: var(--text2); line-height: 1.45; vertical-align: top; }
+.bp-table td.lane-label { background: var(--bg3); font-weight: 500; color: var(--text3); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+.bp-pain { color: var(--coral); }
+
+/* ── Signal chips ── */
+.signal-strip { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 16px; }
+.signal-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 11px; border-radius: 20px; font-size: 10px; cursor: pointer;
+  border: 1px solid rgba(139,127,245,0.25); background: rgba(139,127,245,0.08);
+  color: var(--accent); transition: all 0.15s;
+}
+.signal-chip:hover { background: rgba(139,127,245,0.16); }
+.signal-chip.new-signal { border-color: rgba(46,196,160,0.3); background: rgba(46,196,160,0.07); color: var(--teal); }
+.signal-chip.new-signal:hover { background: rgba(46,196,160,0.14); }
+.sig-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+/* ── Portfolio signals ── */
+.portfolio-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.portfolio-row:last-child { border-bottom: none; }
+.port-label { font-size: 12px; color: var(--text2); width: 170px; flex-shrink: 0; }
+.port-bar-wrap { flex: 1; height: 5px; background: var(--bg4); border-radius: 3px; overflow: hidden; }
+.port-bar { height: 100%; border-radius: 3px; transition: width 1s ease; }
+.port-score { font-size: 12px; font-weight: 500; color: var(--text); min-width: 30px; text-align: right; font-family: var(--font-mono); }
+.port-gap { font-size: 10px; color: var(--text3); min-width: 80px; text-align: right; }
+
+/* ── Stakeholder brief ── */
+.brief-section { padding: 13px 14px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 8px; }
+.brief-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); font-weight: 600; margin-bottom: 5px; }
+.brief-text { font-size: 12px; color: var(--text2); line-height: 1.6; }
+.brief-section.highlight { border-color: rgba(139,127,245,0.25); background: rgba(139,127,245,0.05); }
+.brief-section.highlight .brief-text { color: var(--accent); }
+
+/* ── Chart area ── */
+.chart-wrap { position: relative; width: 100%; }
+
+/* ── Empty state ── */
+.empty { text-align: center; padding: 40px 20px; color: var(--text3); }
+.empty-icon { font-size: 28px; margin-bottom: 10px; }
+.empty-text { font-size: 12px; line-height: 1.6; }
+
+/* ── Source pill ── */
+.source-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 7px; border-radius: 10px; font-size: 9px;
+  background: var(--bg3); color: var(--text3);
+  border: 1px solid var(--border); font-family: var(--font-mono);
+}
+
+/* ── Timeline ── */
+.timeline-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.timeline-item:last-child { border-bottom: none; }
+.timeline-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 3px; flex-shrink: 0; }
+.timeline-content { flex: 1; }
+.timeline-title { font-size: 12px; font-weight: 500; color: var(--text); }
+.timeline-date { font-size: 10px; color: var(--text3); font-family: var(--font-mono); margin-top: 1px; }
+.timeline-desc { font-size: 11px; color: var(--text3); margin-top: 3px; line-height: 1.4; }
+
+/* ── Scrollable table wrap ── */
+.table-scroll { overflow-x: auto; }
+
+/* ── Animations ── */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.view.active { animation: fadeIn 0.25s ease; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+.pulse { animation: pulse 2s infinite; }
+
+/* ── Horizontal rule ── */
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+/* ── Pill row for AI uses ── */
+.pill-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.pill { padding: 4px 10px; border-radius: 20px; font-size: 10px; border: 1px solid var(--border); color: var(--text3); background: var(--bg3); }
+
+/* ── Product header ── */
+.product-hero {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px 22px;
+  margin-bottom: 18px;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 20px;
+}
+.product-hero-info { flex: 1; }
+.product-name { font-family: var(--font-display); font-size: 20px; color: var(--text); margin-bottom: 4px; }
+.product-desc { font-size: 12px; color: var(--text3); line-height: 1.55; max-width: 560px; }
+.product-tags { display: flex; gap: 6px; margin-top: 10px; }
+.product-stat { text-align: right; }
+.product-stat-val { font-family: var(--font-mono); font-size: 22px; font-weight: 500; color: var(--text); }
+.product-stat-label { font-size: 10px; color: var(--text3); }
+
+/* ── Overview grid ── */
+.product-overview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+.product-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 16px 16px;
+  cursor: pointer; transition: all 0.2s;
+  position: relative; overflow: hidden;
+}
+.product-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+.product-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+.pc-exam::before { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+.pc-faas::before { background: linear-gradient(90deg, var(--amber), #e8900a); }
+.pc-eval::before { background: linear-gradient(90deg, var(--teal), #1a9e82); }
+.pc-skills::before { background: linear-gradient(90deg, #78aaf5, #4a82e0); }
+.pc-lc::before { background: linear-gradient(90deg, #e87ab5, #c45090); }
+.pc-name { font-weight: 600; font-size: 12px; color: var(--text); margin-bottom: 4px; }
+.pc-desc { font-size: 10px; color: var(--text3); line-height: 1.45; margin-bottom: 10px; }
+.pc-stats { display: flex; gap: 12px; }
+.pc-stat-item { font-size: 10px; }
+.pc-stat-num { font-family: var(--font-mono); font-weight: 500; color: var(--text); }
+.pc-stat-lbl { color: var(--text3); }
+.pc-status { position: absolute; top: 12px; right: 12px; }
+
+/* ── Responsive chart containers ── */
+.chart-h140 { height: 140px; }
+.chart-h180 { height: 180px; }
+.chart-h220 { height: 220px; }
+
+/* ── detail expandable ── */
+.detail-panel {
+  margin-top: 14px; padding: 14px 16px;
+  border-radius: var(--radius); background: rgba(139,127,245,0.06);
+  border: 1px solid rgba(139,127,245,0.2);
+  display: none;
+}
+.detail-panel.open { display: block; animation: fadeIn 0.2s ease; }
+.detail-title { font-size: 13px; font-weight: 500; color: var(--accent); margin-bottom: 5px; }
+.detail-body { font-size: 12px; color: var(--text2); line-height: 1.6; }
+.detail-source { font-size: 10px; color: var(--accent); margin-top: 6px; font-family: var(--font-mono); opacity: 0.7; }
+
+/* ── search ── */
+.search-bar {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 7px 12px;
+  margin-bottom: 16px;
+}
+.search-bar input {
+  background: none; border: none; color: var(--text);
+  font-size: 12px; flex: 1; font-family: var(--font-body);
+}
+.search-bar input::placeholder { color: var(--text3); }
+
+/* ── Roadmap ── */
+.roadmap-col { display: flex; flex-direction: column; gap: 8px; }
+.roadmap-phase { background: var(--bg3); border-radius: 7px; border: 1px solid var(--border); padding: 11px 12px; }
+.roadmap-phase-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 7px; }
+.roadmap-item { padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 11px; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+.roadmap-item:last-child { border-bottom: none; }
+.ri-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">✦</div>
+    <div>
+      <div class="logo-text">Insight Hub</div>
+      <div class="logo-sub">v1.0 · March 2026</div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">Workspace</div>
+  <div class="nav-item active" onclick="nav('overview', this)">
+    <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.2"/></svg>
+    Overview
+  </div>
+
+  <div class="sidebar-section">Products</div>
+  <div class="nav-item" onclick="nav('exam', this)">
+    <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M3 2h10a1 1 0 011 1v10a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.2"/><path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Exam Management
+    <span class="nav-badge badge-green">Active</span>
+  </div>
+  <div class="nav-item" onclick="nav('faas', this)">
+    <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h8M2 12h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    FaaS 2.0
+    <span class="nav-badge badge-amber">WIP</span>
+  </div>
+  <div class="nav-item" onclick="nav('eval', this)">
+    <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Course & Faculty Eval
+    <span class="nav-badge badge-new">New</span>
+  </div>
+  <div class="nav-item" onclick="nav('skills', this)">
+    <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Skills Checklist
+    <span class="nav-badge badge-blue">Q2–Q4</span>
+  </div>
+  <div class="nav-item" onclick="nav('lc', this)">
+    <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M4 8h5M4 11h3M10 2v4h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M5 2H3a1 1 0 00-1 1v10a1 1 0 001 1h10a1 1 0 001-1V6l-4-4z" stroke="currentColor" stroke-width="1.2"/></svg>
+    Learning Contracts
+  </div>
+
+  <div class="sidebar-section">Intelligence</div>
+  <div class="nav-item" onclick="nav('personas', this)">
+    <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="4" cy="4" r="2" stroke="currentColor" stroke-width="1.2"/><circle cx="12" cy="4" r="2" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="12" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M6 4h4M5.2 5.5L8 10M10.8 5.5L8 10" stroke="currentColor" stroke-width="1"/></svg>
+    Persona Map
+  </div>
+  <div class="nav-item" onclick="nav('themes', this)">
+    <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 4h4v4H2zM10 2h4v4h-4zM4 10h4v4H4zM10 10h2v2h-2z" stroke="currentColor" stroke-width="1.2" rx="1"/></svg>
+    Theme Clusters
+  </div>
+  <div class="nav-item" onclick="nav('roadmap', this)">
+    <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M8 3l5 5-5 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Roadmap
+  </div>
+
+  <div class="sidebar-section">Portfolio</div>
+  <div class="nav-item" onclick="nav('portfolio', this)">
+    <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 12L5 9l3 3 4-5 2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Staff Signal
+  </div>
+  <div class="nav-item" onclick="nav('stakeholder', this)">
+    <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 13c0-2.2 2.7-4 6-4s6 1.8 6 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="6" r="3" stroke="currentColor" stroke-width="1.2"/></svg>
+    Stakeholder Deck
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="user-row">
+      <div class="user-av">RS</div>
+      <div>
+        <div class="user-name">Romit Soley</div>
+        <div class="user-role">Product Designer II · Exxat</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<div class="main">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="breadcrumb">
+        Insight Hub <span class="bc-sep">›</span>
+        <span id="page-title">Overview</span>
+      </div>
+      <span class="tb-tag" id="page-tag">All Products</span>
+    </div>
+    <div class="topbar-right">
+      <button class="tb-btn" onclick="nav('personas', null)">Persona Map</button>
+      <button class="tb-btn" onclick="nav('themes', null)">Themes</button>
+      <button class="tb-btn primary" onclick="nav('stakeholder', null)">Stakeholder Deck</button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- ════════════ OVERVIEW ════════════ -->
+    <div class="view active" id="view-overview">
+      <div class="section-head">
+        <div>
+          <div class="section-title">Platform Overview</div>
+          <div class="section-sub">5 products · 4 personas · 39 Granola sessions synthesized · Last updated Mar 19, 2026</div>
+        </div>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-label">Insights tagged</div>
+          <div class="metric-val">147</div>
+          <div class="metric-delta delta-up">+38 from Granola sync</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Platform signals</div>
+          <div class="metric-val">6</div>
+          <div class="metric-delta delta-up">3 new this week</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Critical gaps</div>
+          <div class="metric-val">10</div>
+          <div class="metric-delta delta-neutral">Across 5 products</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Staff signal score</div>
+          <div class="metric-val">87</div>
+          <div class="metric-delta delta-up">+4 this month</div>
+        </div>
+      </div>
+
+      <div class="ai-strip">
+        <div class="ai-icon">✦</div>
+        <div class="ai-text">
+          <strong>6 platform-level signals detected</strong> from 39 Granola meetings. AI opportunity layer confirmed across all 5 products. Multi-campus fragmentation is Touro's #1 pain. Skills standalone entity is the Q2–Q4 architectural unlock. Course Eval is a strategic recovery play after Blue/Canvas displacement.
+        </div>
+      </div>
+
+      <div class="product-overview-grid">
+        <div class="product-card pc-exam" onclick="nav('exam', null)">
+          <div class="pc-status"><span class="nav-badge badge-green">Active</span></div>
+          <div class="pc-name">Exam Management</div>
+          <div class="pc-desc">Question bank, AI-assisted tagging, accessibility redesign, UNF pilot July. ExamSoft competitor with modern UX.</div>
+          <div class="pc-stats">
+            <div class="pc-stat-item"><span class="pc-stat-num">3</span> <span class="pc-stat-lbl">critical gaps</span></div>
+            <div class="pc-stat-item"><span class="pc-stat-num">9</span> <span class="pc-stat-lbl">insights</span></div>
+            <div class="pc-stat-item"><span class="pc-stat-num">Jul</span> <span class="pc-stat-lbl">UNF pilot</span></div>
+          </div>
+        </div>
+        <div class="product-card pc-faas" onclick="nav('faas', null)">
+          <div class="pc-status"><span class="nav-badge badge-amber">WIP</span></div>
+          <div class="pc-name">FaaS 2.0</div>
+          <div class="pc-desc">17,000+ forms · 95k support tickets · NPS 2/5. Governance model, preceptor intake, Patient Log migration.</div>
+          <div class="pc-stats">
+            <div class="pc-stat-item"><span class="pc-stat-num">3</span> <span class="pc-stat-lbl">critical gaps</span></div>
+            <div class="pc-stat-item"><span class="pc-stat-num">95k</span> <span class="pc-stat-lbl">tickets/yr</span></div>
+            <div class="pc-stat-item"><span class="pc-stat-num">2/5</span> <span class="pc-stat-lbl">NPS</span></div>
+          </div>
+        </div>
+        <div class="product-card pc-eval" onclick="nav('eval', null)">
+          <div class="pc-status"><span class="nav-badge badge-new">New Module</span></div>
+          <div class="pc-name">Course & Faculty Eval</div>
+          <div class="pc-desc">Strategic recovery after Blue/Canvas displacement. 7 survey types currently outside Exxat at Touro alone.</div>
+          <div class="pc-stats">
+            <div class="pc-stat-item"><span class="pc-stat-num">7</span> <span class="pc-stat-lbl">survey types lost</span></div>
+            <div class="pc-stat-item"><span class="pc-stat-num">Apr</span> <span class="pc-stat-lbl">design workshop</span></div>
+          </div>
+        </div>
+        <div class="product-card pc-skills" onclick="nav('skills', null)">
+          <div class="pc-status"><span class="nav-badge badge-blue">Q2–Q4</span></div>
+          <div class="pc-name">Skills Checklist</div>
+          <div class="pc-desc">Standalone student program-level competency entity. Cross-placement aggregation. Jan 2027 launch target.</div>
+          <div class="pc-stats">
+            <div class="pc-stat-item"><span class="pc-stat-num">2</span> <span class="pc-stat-lbl">critical gaps</span></div>
+            <div class="pc-stat-item"><span class="pc-stat-num">Jan '27</span> <span class="pc-stat-lbl">launch</span></div>
+          </div>
+        </div>
+        <div class="product-card pc-lc" onclick="nav('lc', null)">
+          <div class="pc-status"><span class="nav-badge" style="background:rgba(232,122,181,0.12);color:#e87ab5;">Scoped</span></div>
+          <div class="pc-name">Learning Contracts</div>
+          <div class="pc-desc">Multi-semester support, social work competency framework integration, ARC-PA evidence requirements.</div>
+          <div class="pc-stats">
+            <div class="pc-stat-item"><span class="pc-stat-num">1</span> <span class="pc-stat-lbl">critical gap</span></div>
+            <div class="pc-stat-item"><span class="pc-stat-num">9</span> <span class="pc-stat-lbl">ARC-PA areas</span></div>
+          </div>
+        </div>
+        <div class="product-card" style="background:var(--bg3);border-style:dashed;cursor:default;">
+          <div class="empty" style="padding:20px 0;">
+            <div style="font-size:22px;margin-bottom:6px;">+</div>
+            <div style="font-size:11px;color:var(--text3);">PA Student Dashboard<br><span style="font-size:10px;">New surface from Touro session</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Recent Granola insights <span class="card-sub">Last 7 days</span></div>
+          <div class="insight-item">
+            <div class="insight-meta"><span class="tag tag-gap">Gap</span><span class="tag tag-new">New</span><span class="tag tag-persona">Faculty</span></div>
+            <div class="insight-text">Multi-campus exam sharing requires print → email → re-upload. EKG images sent via Box. California campus runs different ExamSoft version entirely.</div>
+            <div class="insight-source">Exxat&lt;&gt;Touro ExamSoft meeting · Mar 11</div>
+          </div>
+          <div class="insight-item">
+            <div class="insight-meta"><span class="tag tag-theme">Theme</span><span class="tag tag-new">New</span></div>
+            <div class="insight-text">Skills must be a student program-level entity — not placement-scoped. "Have I done this skill across all rotations?" is currently unanswerable.</div>
+            <div class="insight-source">Day 4 Marriott — Skills &amp; LC · Mar 5</div>
+          </div>
+          <div class="insight-item">
+            <div class="insight-meta"><span class="tag tag-opp">Opportunity</span><span class="tag tag-new">New</span></div>
+            <div class="insight-text">AI PANCE readiness predictor — "if student took exam today, probability of passing" — explicitly requested from Touro PA program. High feasibility.</div>
+            <div class="insight-source">PA Student performance dashboard · Mar 17</div>
+          </div>
+          <div class="insight-item">
+            <div class="insight-meta"><span class="tag tag-gap">Gap</span><span class="tag tag-persona">Program Director</span></div>
+            <div class="insight-text">Touro runs 7 survey types outside Exxat (in Blue/Canvas). Survey UX lost client trust — questions renumber on edit.</div>
+            <div class="insight-source">Exxat&lt;&gt;Touro ExamSoft meeting · Mar 11</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Platform signal strength</div>
+          <div class="portfolio-row">
+            <div class="port-label">AI opportunity layer</div>
+            <div class="port-bar-wrap"><div class="port-bar" style="width:95%;background:var(--teal)"></div></div>
+            <div class="port-score">5/5</div>
+          </div>
+          <div class="portfolio-row">
+            <div class="port-label">Multi-campus fragmentation</div>
+            <div class="port-bar-wrap"><div class="port-bar" style="width:72%;background:var(--amber)"></div></div>
+            <div class="port-score">3/5</div>
+          </div>
+          <div class="portfolio-row">
+            <div class="port-label">Reporting deficit</div>
+            <div class="port-bar-wrap"><div class="port-bar" style="width:80%;background:var(--coral)"></div></div>
+            <div class="port-score">3/5</div>
+          </div>
+          <div class="portfolio-row">
+            <div class="port-label">Cognitive overload</div>
+            <div class="port-bar-wrap"><div class="port-bar" style="width:72%;background:var(--accent)"></div></div>
+            <div class="port-score">3/5</div>
+          </div>
+          <div class="portfolio-row">
+            <div class="port-label">Mobile gap (SCCE)</div>
+            <div class="port-bar-wrap"><div class="port-bar" style="width:48%;background:#78aaf5"></div></div>
+            <div class="port-score">2/5</div>
+          </div>
+          <div class="portfolio-row">
+            <div class="port-label">Standalone skills entity</div>
+            <div class="port-bar-wrap"><div class="port-bar" style="width:80%;background:#e87ab5"></div></div>
+            <div class="port-score">2/5</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ EXAM MANAGEMENT ════════════ -->
+    <div class="view" id="view-exam">
+      <div class="product-hero">
+        <div class="product-hero-info">
+          <div class="product-name">Exam Management</div>
+          <div class="product-desc">ExamSoft competitor targeting 30–40% of current ExamSoft users. Canvas-level UX with clinical-education intelligence. React front-end confirmed. AI-first roadmap: question gen from slides, Bloom's tagging, PANCE predictor, adaptive testing.</div>
+          <div class="product-tags">
+            <span class="tag tag-persona">Student</span>
+            <span class="tag tag-persona">Faculty</span>
+            <span class="tag tag-persona">Program Director</span>
+            <span class="tag tag-theme">CAAHEP · CAPTE · ARC-PA</span>
+          </div>
+        </div>
+        <div class="product-stat">
+          <div class="product-stat-val">Jul '26</div>
+          <div class="product-stat-label">UNF pilot deadline</div>
+          <div style="margin-top:8px;">
+            <div class="product-stat-val">Nov–Dec</div>
+            <div class="product-stat-label">ExamSoft-competitive launch</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-strip">
+        <div class="ai-icon">✦</div>
+        <div class="ai-text">
+          <strong>3 AI opportunities confirmed from Granola:</strong> (1) Question generation from lecture slides + NCCPA blueprint — top Touro request. (2) AI-assisted Bloom's tagging on ExamSoft import. (3) PANCE readiness predictor. Touro also requested AI personalized remediation based on PACRAT + EOR results.
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('exam','insights',this)">Insights</div>
+        <div class="tab" onclick="switchTab('exam','blueprint',this)">Service Blueprint</div>
+        <div class="tab" onclick="switchTab('exam','features',this)">Feature Map</div>
+        <div class="tab" onclick="switchTab('exam','analytics',this)">Analytics</div>
+      </div>
+
+      <div id="exam-insights">
+        <div class="metric-grid">
+          <div class="metric-card"><div class="metric-label">Insights</div><div class="metric-val">31</div><div class="metric-delta delta-up">+12 from Granola</div></div>
+          <div class="metric-card"><div class="metric-label">Critical gaps</div><div class="metric-val">3</div><div class="metric-delta delta-dn">Accessibility, multi-campus, annotation</div></div>
+          <div class="metric-card"><div class="metric-label">AI opportunities</div><div class="metric-val">4</div><div class="metric-delta delta-up">All confirmed from Touro</div></div>
+          <div class="metric-card"><div class="metric-label">Sources</div><div class="metric-val">9</div><div class="metric-delta delta-neutral">Granola sessions</div></div>
+        </div>
+        <div class="col-wide">
+          <div class="card">
+            <div class="card-title">Insight feed <span class="card-sub">Exam Management · 9 Granola sources</span></div>
+            <div class="insight-item">
+              <div class="insight-meta"><span class="tag tag-gap">Gap</span><span class="tag tag-new">Granola</span><span class="tag tag-platform">Platform-level</span></div>
+              <div class="insight-text">Multi-campus exam sharing: faculty print questions, email to other campus, re-upload with images. EKG and complex files via Box. California campus requires different ExamSoft version. This is Touro's #1 stated pain.</div>
+              <div class="insight-source">Exxat&lt;&gt;Touro ExamSoft meeting · Mar 11 · Confirmed from Touro private notes</div>
+            </div>
+            <div class="insight-item">
+              <div class="insight-meta"><span class="tag tag-gap">Gap</span><span class="tag tag-persona">Student</span></div>
+              <div class="insight-text">No annotation tools (highlight / cross-out) in exam interface. Accessibility blocked by lockdown browser: magnification, high contrast, on-screen keyboard all absent. UNF pilot is the deadline forcing resolution.</div>
+              <div class="insight-source">Accessibility features session · Mar 16 · Romit&lt;&gt;Nipun roadmap · Mar 11</div>
+            </div>
+            <div class="insight-item">
+              <div class="insight-meta"><span class="tag tag-theme">Theme</span><span class="tag tag-new">Granola</span><span class="tag tag-persona">Faculty</span></div>
+              <div class="insight-text">Faculty split confirmed: power users want Bloom's taxonomy + LO cross-referencing + version history. Research-first faculty want zero overhead. Same interface must serve both — progressive disclosure is the architectural answer.</div>
+              <div class="insight-source">Exam platform strategy · Mar 4 · Question bank multi-campus · Mar 12</div>
+            </div>
+            <div class="insight-item">
+              <div class="insight-meta"><span class="tag tag-opp">Opportunity</span><span class="tag tag-new">Granola</span></div>
+              <div class="insight-text">AI question generation from blueprint: Touro uses NCCPA blueprint to define exam coverage. AI picking questions from the bank that satisfy all blueprint cells would be a "lifesaver" (direct quote from Touro session).</div>
+              <div class="insight-source">Exxat&lt;&gt;Touro ExamSoft meeting · Mar 11 private notes</div>
+            </div>
+            <div class="insight-item">
+              <div class="insight-meta"><span class="tag tag-opp">Opportunity</span><span class="tag tag-new">Granola</span></div>
+              <div class="insight-text">AI personalized remediation: based on where student fails (EOR topic, PACRAT domain), system generates a 30-question PDF in PAEA format for that topic. Every student's remediation path is different.</div>
+              <div class="insight-source">Exxat&lt;&gt;Touro ExamSoft meeting · Mar 11</div>
+            </div>
+            <div class="insight-item">
+              <div class="insight-meta"><span class="tag tag-gap">Gap</span><span class="tag tag-new">Granola</span></div>
+              <div class="insight-text">ExamSoft security concerns: information loss when questions modified, unclear audit trail for exam access, real-time updates not maintained. Previous cheating incidents requiring password resets. Exxat must match or exceed security posture.</div>
+              <div class="insight-source">Dr. T Clinical Team — Touro · Mar 11</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div class="card">
+              <div class="card-title">Milestone timeline</div>
+              <div class="timeline-item">
+                <div class="timeline-dot" style="background:var(--accent)"></div>
+                <div class="timeline-content">
+                  <div class="timeline-title">April 17 demo</div>
+                  <div class="timeline-date">Apr 17, 2026</div>
+                  <div class="timeline-desc">Student + admin + faculty initial prototype. Question bank entry points. Accessibility V1.</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot" style="background:var(--teal)"></div>
+                <div class="timeline-content">
+                  <div class="timeline-title">May — Architecture review</div>
+                  <div class="timeline-date">May 2026</div>
+                  <div class="timeline-desc">Product architecture + role-based access. No AI features yet.</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot" style="background:var(--amber)"></div>
+                <div class="timeline-content">
+                  <div class="timeline-title">July — UNF pilot</div>
+                  <div class="timeline-date">Jul 2026</div>
+                  <div class="timeline-desc">Annual graduation exam, MCQ format, 2nd-year students. Accessibility must be complete.</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot" style="background:var(--accent)"></div>
+                <div class="timeline-content">
+                  <div class="timeline-title">AI capabilities</div>
+                  <div class="timeline-date">Jul–Aug 2026</div>
+                  <div class="timeline-desc">Question gen, tagging, PANCE predictor. Must be live before Cohere conference.</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot" style="background:var(--coral)"></div>
+                <div class="timeline-content">
+                  <div class="timeline-title">ExamSoft-competitive launch</div>
+                  <div class="timeline-date">Nov–Dec 2026</div>
+                  <div class="timeline-desc">Full feature parity + AI edge. Cannot launch half-baked given ExamSoft challenge.</div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">Persona coverage</div>
+              <div class="portfolio-row">
+                <div class="port-label">Student (test-taker)</div>
+                <div class="port-bar-wrap"><div class="port-bar" style="width:45%;background:var(--accent)"></div></div>
+                <div class="port-score">45%</div>
+              </div>
+              <div class="portfolio-row">
+                <div class="port-label">Faculty (author)</div>
+                <div class="port-bar-wrap"><div class="port-bar" style="width:60%;background:var(--teal)"></div></div>
+                <div class="port-score">60%</div>
+              </div>
+              <div class="portfolio-row">
+                <div class="port-label">Admin (config)</div>
+                <div class="port-bar-wrap"><div class="port-bar" style="width:30%;background:var(--amber)"></div></div>
+                <div class="port-score">30%</div>
+              </div>
+              <div class="portfolio-row">
+                <div class="port-label">Program Director</div>
+                <div class="port-bar-wrap"><div class="port-bar" style="width:20%;background:var(--coral)"></div></div>
+                <div class="port-score">20%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="exam-blueprint" style="display:none;">
+        <div class="card">
+          <div class="card-title">Service blueprint · Question lifecycle <span class="card-sub">From creation to post-exam analytics</span></div>
+          <div class="table-scroll">
+            <table class="bp-table">
+              <thead><tr><th>Lane</th><th>Create</th><th>Tag</th><th>Review</th><th>Publish</th><th>Exam delivery</th><th>Analytics</th></tr></thead>
+              <tbody>
+                <tr><td class="lane-label">User actions</td><td>Write stem + options in editor</td><td>Assign Bloom's, LO, difficulty</td><td>Peer reviews, comments, approves</td><td>Question moves to bank</td><td>Student takes exam (lockdown)</td><td>Faculty reviews item stats</td></tr>
+                <tr><td class="lane-label">Frontstage UI</td><td>Rich text editor, image upload, MCQ builder</td><td>Tag panel with AI suggestion overlay</td><td>Review sidebar, diff view, approve button</td><td>Bank view, version history</td><td>Exam interface + accessibility layer</td><td>Item heatmap, p-value dashboard</td></tr>
+                <tr><td class="lane-label">Backstage</td><td>Version UUID created, audit log entry</td><td>AI taxonomy model runs on save</td><td>Notification dispatch, audit log</td><td>Status → approved, eligibility flag</td><td>Lockdown session, encrypted delivery</td><td>p-value, discrimination index computed</td></tr>
+                <tr><td class="lane-label">Policies</td><td>FERPA: no student ID in stem</td><td>CAPTE requires LO mapping</td><td>Min. 1 peer reviewer required</td><td>WCAG 2.1 AA check on publish</td><td>Lockdown browser enforced</td><td>De-identified before export</td></tr>
+                <tr><td class="lane-label bp-pain">Pain points</td><td class="bp-pain">—</td><td class="bp-pain">Manual tagging = high burden</td><td class="bp-pain">No async comment threading</td><td class="bp-pain">Multi-campus sync broken</td><td class="bp-pain">No annotation, accessibility gap</td><td class="bp-pain">No cohort vs national view</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="exam-features" style="display:none;">
+        <div class="card">
+          <div class="card-title">Question bank feature scope</div>
+          <div class="feature-grid">
+            <div class="feat-box feat-accent"><div class="feat-title">Question creation</div><div class="feat-desc">MCQ, multi-select, clinical vignette, matching. Rich text editor, image upload, media embed. Version history with diff view.</div></div>
+            <div class="feat-box feat-teal"><div class="feat-title">AI tagging system</div><div class="feat-desc">Bloom's taxonomy auto-suggest on save. LO mapping. AI-assisted import from ExamSoft. Tag suggestion prevents inconsistencies (heart vs cardiovascular).</div></div>
+            <div class="feat-box feat-amber"><div class="feat-title">Review workflow</div><div class="feat-desc">Faculty collaboration with async comment threads. Draft → In Review → Approved status. HOD visibility into version usage across faculty.</div></div>
+            <div class="feat-box feat-coral"><div class="feat-title">Multi-campus sharing</div><div class="feat-desc">Flat tagging replaces folder hierarchy. Smart Views auto-populate based on criteria. View-only access for cross-campus faculty. No more print→email→re-upload.</div></div>
+            <div class="feat-box feat-accent"><div class="feat-title">Performance analytics</div><div class="feat-desc">Item analysis: p-value, point biserial, discrimination index. Individual / peer / cohort / national benchmarks. NCCPA blueprint alignment heatmap.</div></div>
+            <div class="feat-box feat-teal"><div class="feat-title">AI exam assembly</div><div class="feat-desc">Blueprint-based question picker — AI selects questions satisfying all blueprint cells. Psychometric-based exam creation. 5-question Bloom's assessment builder.</div></div>
+            <div class="feat-box feat-amber"><div class="feat-title">Student exam interface</div><div class="feat-desc">Annotation layer (highlight / cross-out). Keyboard-only navigation. On-screen keyboard. Magnification. High contrast mode. Rationale display on low-stakes exams.</div></div>
+            <div class="feat-box feat-coral"><div class="feat-title">Accreditation export</div><div class="feat-desc">CAPTE / ACOTE / ARC-PA competency mapping. NCCPA blueprint coverage report. One-click program report for self-study. PANCE readiness predictor.</div></div>
+          </div>
+          <div class="pill-row" style="margin-top:12px;">
+            <span class="pill">AI layer: question generation from slides</span>
+            <span class="pill">blueprint-based assembly</span>
+            <span class="pill">Bloom's auto-suggest</span>
+            <span class="pill">remediation personalizer</span>
+            <span class="pill">item anomaly alerts</span>
+            <span class="pill">PANCE predictor</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="exam-analytics" style="display:none;">
+        <div class="metric-grid">
+          <div class="metric-card"><div class="metric-label">Bank size</div><div class="metric-val">1,847</div><div class="metric-delta delta-up">+140 this semester</div></div>
+          <div class="metric-card"><div class="metric-label">Avg score</div><div class="metric-val">74%</div><div class="metric-delta delta-up">+3 vs last cohort</div></div>
+          <div class="metric-card"><div class="metric-label">Item flag rate</div><div class="metric-val">12%</div><div class="metric-delta delta-dn">High — review needed</div></div>
+          <div class="metric-card"><div class="metric-label">Review backlog</div><div class="metric-val">63</div><div class="metric-delta delta-dn">Stale &gt;30 days</div></div>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title">Score distribution · PT Cohort 2025</div>
+            <div class="chart-wrap chart-h180"><canvas id="scoreChart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Item p-value by Bloom's level</div>
+            <div class="chart-wrap chart-h180"><canvas id="bloomChart"></canvas></div>
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title">PAEA EOR benchmark · Touro PA 2025</div>
+            <div class="chart-wrap chart-h180"><canvas id="eorChart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Question bank growth</div>
+            <div class="chart-wrap chart-h180"><canvas id="bankChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ FaaS 2.0 ════════════ -->
+    <div class="view" id="view-faas">
+      <div class="product-hero">
+        <div class="product-hero-info">
+          <div class="product-name">FaaS 2.0 — Forms as a Service</div>
+          <div class="product-desc">17,000+ configured forms across 11 types. 95,000+ annual support tickets. NPS 2/5. Active work: 3-level governance model, Patient Log migration to Mongo by March end, preceptor intake form build, CAS compliance consolidation Q2–Q3.</div>
+          <div class="product-tags">
+            <span class="tag tag-persona">Student</span>
+            <span class="tag tag-persona">DCE / Faculty</span>
+            <span class="tag tag-persona">SCCE</span>
+            <span class="tag tag-persona">Program Director</span>
+            <span class="tag tag-theme">HIPAA · FERPA · ADA</span>
+          </div>
+        </div>
+        <div class="product-stat">
+          <div class="product-stat-val" style="color:var(--coral)">2/5</div>
+          <div class="product-stat-label">NPS baseline</div>
+          <div style="margin-top:8px;"><div class="product-stat-val">95k</div><div class="product-stat-label">support tickets/yr</div></div>
+        </div>
+      </div>
+
+      <div class="ai-strip">
+        <div class="ai-icon">✦</div>
+        <div class="ai-text">
+          <strong>AI Q1–Q2 target:</strong> 95% automated compliance approval recommendations with human oversight. Multi-model approach: OpenAI, Gemini, Anthropic enterprise. AI audit to supplement current 10% random sampling. Theme extraction from open-ended survey responses ("saves hours and hours" — Touro direct quote).
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Critical gaps from Granola <span class="card-sub">FaaS · 5 sessions</span></div>
+          <div class="insight-item">
+            <div class="insight-meta"><span class="tag tag-gap">Gap</span><span class="tag tag-new">Granola</span><span class="tag tag-platform">Critical</span></div>
+            <div class="insight-text">PDF split: FaaS only covers step 2 of a 3-step site assessment. Accreditors need a unified single document. Clients build it manually by screenshotting and stitching PDFs.</div>
+            <div class="insight-source">Pratiksha&lt;&gt;Romit FaaS site assessment · Mar 18</div>
+          </div>
+          <div class="insight-item">
+            <div class="insight-meta"><span class="tag tag-gap">Gap</span><span class="tag tag-new">Granola</span></div>
+            <div class="insight-text">80,000+ Patient Log forms require individual review and validation for Mongo migration. High confidence required — CRNA programs deferred until after summer.</div>
+            <div class="insight-source">Day 5 FaaS migration · Mar 6</div>
+          </div>
+          <div class="insight-item">
+            <div class="insight-meta"><span class="tag tag-opp">Opportunity</span><span class="tag tag-new">Granola</span></div>
+            <div class="insight-text">Preceptor intake form now being built in FaaS: standardized fields (credentials, licenses, certifications) mapped to global preceptor DB. Custom sections per program. High-stakes SCCE surface.</div>
+            <div class="insight-source">Pratiksha&lt;&gt;Romit FaaS site assessment · Mar 18</div>
+          </div>
+          <div class="insight-item">
+            <div class="insight-meta"><span class="tag tag-theme">Theme</span></div>
+            <div class="insight-text">Low client self-service despite front-end availability. Most clients still ticket the config team for setup. Reasons: interface complexity, satisfaction with standard forms, low tech literacy.</div>
+            <div class="insight-source">Pratiksha&lt;&gt;Romit FaaS site assessment · Mar 18</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Migration phases</div>
+          <div class="timeline-item">
+            <div class="timeline-dot" style="background:var(--amber)"></div>
+            <div class="timeline-content">
+              <div class="timeline-title">Q1 Phase 1: Simple forms, no scoring</div>
+              <div class="timeline-date">Mar–Apr 2026</div>
+              <div class="timeline-desc">Patient Log DB migration to single Mongo. Target schools starting May rotations.</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot" style="background:var(--amber)"></div>
+            <div class="timeline-content">
+              <div class="timeline-title">Q2 Phase 2: Scoring + active components</div>
+              <div class="timeline-date">Apr–Jun 2026</div>
+              <div class="timeline-desc">Close all feature capability gaps vs legacy. 300+ schools benefit from standardized complex form handling.</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot" style="background:var(--teal)"></div>
+            <div class="timeline-content">
+              <div class="timeline-title">Q3: Technical readiness for any form</div>
+              <div class="timeline-date">Jul–Sep 2026</div>
+              <div class="timeline-desc">CAS compliance consolidation. Complex forms: PTSCs, CITs, PT Max with custom rendering.</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot" style="background:var(--accent)"></div>
+            <div class="timeline-content">
+              <div class="timeline-title">Q4: Individual complicated forms</div>
+              <div class="timeline-date">Oct–Dec 2026</div>
+              <div class="timeline-desc">AI approval automation at 95% target. Governance model fully enforced.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">3-Level governance model <span class="card-sub">Active design direction</span></div>
+        <div class="three-col" style="margin-bottom:0;">
+          <div class="feat-box feat-coral">
+            <div class="feat-title">Level 1 · CRITICAL</div>
+            <div class="feat-desc">Settings that affect all tenants or break program-specific configurations. Requires senior approval + audit log. Example: changing global HIPAA field defaults.</div>
+          </div>
+          <div class="feat-box feat-amber">
+            <div class="feat-title">Level 2 · Manager approval</div>
+            <div class="feat-desc">Settings that affect a program or site. Surfaced in review queue. Manager must approve before applying. Example: changing clinical site form structure.</div>
+          </div>
+          <div class="feat-box feat-teal">
+            <div class="feat-title">Level 3 · Warning only</div>
+            <div class="feat-desc">Low-risk changes with in-context warning. User can proceed without approval. Example: reordering fields on a non-critical form section.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ COURSE & FACULTY EVAL ════════════ -->
+    <div class="view" id="view-eval">
+      <div class="product-hero">
+        <div class="product-hero-info">
+          <div class="product-name">Course & Faculty Evaluation</div>
+          <div class="product-desc">Strategic recovery module. Touro runs 7 survey types outside Exxat in Blue/Canvas. Dedicated module planned (April workshop). FaaS components embedded, not standalone. Target: recapture programmatic survey workflows from competitors. $5K/yr standalone market.</div>
+          <div class="product-tags">
+            <span class="tag tag-persona">Faculty</span><span class="tag tag-persona">Program Director</span>
+            <span class="tag tag-theme">ARC-PA · CAAHEP · CCNE</span>
+          </div>
+        </div>
+        <div class="product-stat">
+          <div class="product-stat-val" style="color:var(--coral)">7</div>
+          <div class="product-stat-label">Survey types lost to Blue/Canvas at Touro</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Touro survey type coverage gap <span class="card-sub">What Exxat is missing</span></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-gap">Gap</span></div><div class="insight-text">Faculty peer review evaluation — used internally for faculty development, not captured in Exxat.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-gap">Gap</span></div><div class="insight-text">Didactic instructor + course evaluations — currently in Blue/Canvas. Multi-instructor per course required.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-gap">Gap</span></div><div class="insight-text">Orientation survey — 2 weeks before course start. Not supported in Exxat.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-gap">Gap</span></div><div class="insight-text">End-of-didactic curriculum evaluation — tied to ARC-PA accreditation cycle.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-gap">Gap</span></div><div class="insight-text">Exit and graduate surveys — 8–16% response rate. Employment data needed by ARC-PA but collection is broken.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-opp">Opportunity</span></div><div class="insight-text">AI theme extraction from open-ended responses: Touro explicitly said "saves hours and hours." High feasibility, low design risk.</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Module requirements <span class="card-sub">From Granola — PRISM Day 2 + Touro</span></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-theme">Requirement</span></div><div class="insight-text">Hybrid surveys: one form covering course rating + multiple individual instructor ratings. 1 course, 3+ instructors = one evaluation session.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-theme">Requirement</span></div><div class="insight-text">Timing control: form opens after course ends, closes before final grades published. Faculty cannot see results until after grades submitted.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-theme">Requirement</span></div><div class="insight-text">Response rate tracking: target 60–65% for accreditation. Dashboard showing completion by course, program, campus.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-theme">Requirement</span></div><div class="insight-text">Historical comparison and trending: evaluation scores over time per course and instructor. Accreditation self-study requires this.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-opp">Opportunity</span></div><div class="insight-text">AI narrative synthesis: turn aggregate scores + open-ended themes into a ready-to-paste accreditation self-study paragraph. Huge PD time-saver.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ SKILLS CHECKLIST ════════════ -->
+    <div class="view" id="view-skills">
+      <div class="product-hero">
+        <div class="product-hero-info">
+          <div class="product-name">Skills Checklist</div>
+          <div class="product-desc">Major Q2–Q4 build. Core architectural decision: skills as student program-level entity, not placement-scoped. Student-initiated evaluation model. Cross-placement aggregation. Procedure minimum tracking. Jan 2027 launch. Competitive threat: Typhon, CompetencyAI.</div>
+          <div class="product-tags">
+            <span class="tag tag-persona">Student</span><span class="tag tag-persona">SCCE</span>
+            <span class="tag tag-persona">DCE / Faculty</span><span class="tag tag-persona">Program Director</span>
+            <span class="tag tag-theme">CAPTE · ACOTE · ARC-PA · CCNE</span>
+          </div>
+        </div>
+        <div class="product-stat">
+          <div class="product-stat-val">Jan '27</div>
+          <div class="product-stat-label">Launch target</div>
+        </div>
+      </div>
+
+      <div class="ai-strip">
+        <div class="ai-icon">✦</div>
+        <div class="ai-text">
+          <strong>4 AI opportunities confirmed from Day 4 Marriott session:</strong> Setup automation (PDF upload → skill hierarchy), smart scheduling (surface eval request at right clinical moment), early-warning for students at risk, graduation readiness predictor. AI setup of skill trees from existing program documents is the fastest adoption path.
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Architecture decisions <span class="card-sub">Confirmed — Day 4 Marriott</span></div>
+          <div class="insight-item">
+            <div class="insight-meta"><span class="tag tag-theme">Architecture</span><span class="tag tag-new">Granola</span></div>
+            <div class="insight-text">Skills exist at student program level — not inside placements or courses. "Will this student graduate from this program?" is the framing question. Skills can be achieved across multiple placements, lab sessions, or outside clinical settings.</div>
+          </div>
+          <div class="insight-item">
+            <div class="insight-meta"><span class="tag tag-theme">Architecture</span><span class="tag tag-new">Granola</span></div>
+            <div class="insight-text">Student-initiated evaluation model: student triggers assessment when ready. Sends to whoever worked with them that day — not just the main preceptor. Student maintains ownership of complete skills portfolio.</div>
+          </div>
+          <div class="insight-item">
+            <div class="insight-meta"><span class="tag tag-theme">Architecture</span><span class="tag tag-new">Granola</span></div>
+            <div class="insight-text">Same backend technical structure for skills (entry-level programs) and competencies (advanced degree programs). Different UIs tailored to domain. Domain-specific terminology: "Skills Tracking" (nursing), "Clinical Passport" (PA), "Competency Management" (social work).</div>
+          </div>
+          <div class="insight-item">
+            <div class="insight-meta"><span class="tag tag-opp">Opportunity</span><span class="tag tag-new">Granola</span></div>
+            <div class="insight-text">Procedure minimum tracking: 3x per procedure type required by ARC-PA for PA programs. "Just show me the reds" — filter to students below threshold. Overflow catch-up rotation (10th rotation) for students who missed required procedures.</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Domain variations confirmed <span class="card-sub">Day 4 Marriott research</span></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-persona">PA Programs</span></div><div class="insight-text">Clinical passport by rotation type. 15 core technical skills. Patient logging triggers skill eval request. Graduation requires satisfactory demonstration of all skills.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-persona">Nursing Programs</span></div><div class="insight-text">Batch evaluation UI: rows = students, columns = skills. Skills lab integration for initial demonstration before clinical. Body-system hierarchy.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-persona">Rad Tech</span></div><div class="insight-text">50+ X-ray procedure types. Complex hierarchy: body parts → systems → specific procedures. Custom scoring: 0/5/7.5/9/10 points.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-persona">Social Work</span></div><div class="insight-text">9 standard competency areas. Skills eval directly maps to professional competencies. Learning contract integration: planning + assessment in unified workflow.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ LEARNING CONTRACTS ════════════ -->
+    <div class="view" id="view-lc">
+      <div class="product-hero">
+        <div class="product-hero-info">
+          <div class="product-name">Learning Contracts</div>
+          <div class="product-desc">Multi-semester social work placements, ARC-PA competency evidence requirements, preceptor change mid-placement workflow. Currently placement-scoped — architectural fix needed to support 6+ month multi-site experiences.</div>
+          <div class="product-tags">
+            <span class="tag tag-persona">Student</span><span class="tag tag-persona">SCCE</span>
+            <span class="tag tag-persona">DCE</span><span class="tag tag-theme">ARC-PA · CSWE</span>
+          </div>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Key gaps <span class="card-sub">Confirmed from Day 4 Marriott</span></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-gap">Gap</span><span class="tag tag-new">Granola</span></div><div class="insight-text">Social work placements span 6+ months across multiple sites with one contract. Current placement-scoped system breaks this entirely. If preceptor changes mid-placement, no workflow supports continuity.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-gap">Gap</span></div><div class="insight-text">SCCE co-signs at placement start and is only re-engaged at final eval. Missing the entire mid-placement period where course corrections would be most valuable.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-gap">Gap</span></div><div class="insight-text">ARC-PA mandates structured evidence of program-defined competency communication to students and educators. Current LCs do not satisfy this without manual assembly at self-study time.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-opp">Opportunity</span><span class="tag tag-new">Granola</span></div><div class="insight-text">LC-evaluation integration for social work: evaluation form shows learning contract commitments alongside rating scales. Multi-evaluator: SCCE provides comments, faculty coordinator provides ratings. Role-based permissions.</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">ARC-PA 9 competency areas <span class="card-sub">Must be trackable via Learning Contracts</span></div>
+          <div class="insight-item"><div class="insight-meta"></div><div class="insight-text">1. Clinical skills assessment and tracking</div></div>
+          <div class="insight-item"><div class="insight-meta"></div><div class="insight-text">2. Technical skills evaluation</div></div>
+          <div class="insight-item"><div class="insight-meta"></div><div class="insight-text">3. Clinical reasoning and problem-solving</div></div>
+          <div class="insight-item"><div class="insight-meta"></div><div class="insight-text">4. Interprofessional skills</div></div>
+          <div class="insight-item"><div class="insight-meta"></div><div class="insight-text">5. Medical knowledge across disciplines</div></div>
+          <div class="insight-item"><div class="insight-meta"></div><div class="insight-text">6. Professional behaviors and ethics</div></div>
+          <div class="insight-item"><div class="insight-meta"></div><div class="insight-text">7. Patient care and communication</div></div>
+          <div class="insight-item"><div class="insight-meta"></div><div class="insight-text">8. Systems-based practice</div></div>
+          <div class="insight-item"><div class="insight-meta"></div><div class="insight-text">9. Practice-based learning and improvement</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ PERSONA MAP ════════════ -->
+    <div class="view" id="view-personas">
+      <div class="section-head">
+        <div><div class="section-title">Cross-Product Persona Challenge Map</div>
+        <div class="section-sub">Updated with 39 Granola sessions · 6 platform-level signals</div></div>
+      </div>
+
+      <div class="signal-strip">
+        <span style="font-size:10px;color:var(--text3);">Platform signals:</span>
+        <div class="signal-chip">Cognitive overload · 3 products</div>
+        <div class="signal-chip">Reporting deficit · 3 products</div>
+        <div class="signal-chip">Mobile gap · 2 products</div>
+        <div class="signal-chip new-signal">AI opportunity · 5 products ✦</div>
+        <div class="signal-chip new-signal">Multi-campus fragmentation · 3 products ✦</div>
+        <div class="signal-chip new-signal">Standalone skills entity · 2 products ✦</div>
+      </div>
+
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div class="table-scroll">
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th style="width:130px;">Persona</th>
+                <th>Exam Management</th>
+                <th>FaaS 2.0</th>
+                <th>Course & Faculty Eval</th>
+                <th>Skills Checklist</th>
+                <th>Learning Contracts</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="pname-cell">Student</div><div class="prole-cell">Clinical enrollee · Test-taker</div></td>
+                <td><span class="sev-pill sev-c">Critical</span><div class="ct" style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.45">No annotation, accessibility blocked by lockdown browser. UNF pilot July deadline.</div><div class="cross">⬦ Overload</div><div class="ai-sig">✦ AI: rationale post-submit</div></td>
+                <td><span class="sev-pill sev-c">Critical</span><div class="ct" style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.45">No mid-save, opaque status. PDF split. Patient Log migration adds new surface.</div><div class="cross">⬦ Overload</div></td>
+                <td><span class="sev-pill sev-h">High</span><div class="ct" style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.45">Blue/Canvas dependency. Response rate below 60% threshold. Questions renumber on update.</div><div class="new-sig">⬦ Blue/Canvas gap</div></td>
+                <td><span class="sev-pill sev-c">Critical</span><div class="ct" style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.45">Skills trapped in placements. No "have I done this skill across all rotations?" view. 80-90% build external docs.</div><div class="cross">⬦ Overload</div><div class="ai-sig">✦ AI: grad readiness</div></td>
+                <td><span class="sev-pill sev-h">High</span><div class="ct" style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.45">Static objectives, no mid-cycle nudge. Social work: multi-semester scope mismatch.</div><div class="new-sig">⬦ Social work gap</div></td>
+              </tr>
+              <tr>
+                <td><div class="pname-cell">DCE / Faculty</div><div class="prole-cell">Question author · Admin</div></td>
+                <td><span class="sev-pill sev-c">Critical</span><div class="ct" style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.45">Multi-campus print→email→re-upload. Manual Bloom's tagging. No async review threads.</div><div class="cross">⬦ Power user split</div><div class="ai-sig">✦ AI: tag on import, blueprint gen</div></td>
+                <td><span class="sev-pill sev-c">Critical</span><div class="ct" style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.45">17k forms, no governance. Global settings break program configs. Preceptor intake now in FaaS.</div><div class="new-sig">⬦ Preceptor intake new</div></td>
+                <td><span class="sev-pill sev-h">High</span><div class="ct" style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.45">Dedicated course eval module planned. Multi-instructor hybrid forms required. AI theme extraction requested.</div><div class="ai-sig">✦ AI: theme extraction</div></td>
+                <td><span class="sev-pill sev-h">High</span><div class="ct" style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.45">No dashboard across students per site. Batch evaluation UI needed: rows = students, cols = skills.</div><div class="new-sig">⬦ Batch eval needed</div></td>
+                <td><span class="sev-pill sev-h">High</span><div class="ct" style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.45">Templates not linked to accreditor frameworks. No co-edit. Social work LC-eval integration gap.</div><div class="new-sig">⬦ Social work gap</div></td>
+              </tr>
+              <tr>
+                <td><div class="pname-cell">SCCE</div><div class="prole-cell">Site coordinator · Preceptor</div></td>
+                <td><span class="sev-pill sev-n">Not primary</span></td>
+                <td><span class="sev-pill sev-c">Critical</span><div class="ct" style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.45">Infrequent login = relearning every time. CPI/FWPE mobile-only context. Preceptor intake adds credential burden.</div><div class="cross">⬦ Mobile gap</div><div class="new-sig">⬦ Intake onboarding</div></td>
+                <td><span class="sev-pill sev-m">Medium</span><div class="ct" style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.45">No prior eval context when completing new one. OSCE multi-station not supported.</div><div class="new-sig">⬦ OSCE gap (Touro)</div></td>
+                <td><span class="sev-pill sev-c">Critical</span><div class="ct" style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.45">Competency verify on mobile, no tap-complete. Signature capture friction. Receives eval requests without student context.</div><div class="cross">⬦ Mobile gap</div><div class="ai-sig">✦ AI: smart scheduling</div></td>
+                <td><span class="sev-pill sev-h">High</span><div class="ct" style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.45">Co-signs at start, never re-engaged mid-cycle. Preceptor change mid-placement (social work) = no workflow.</div><div class="new-sig">⬦ Mid-placement gap</div></td>
+              </tr>
+              <tr>
+                <td><div class="pname-cell">Program Director</div><div class="prole-cell">Accreditation owner</div></td>
+                <td><span class="sev-pill sev-h">High</span><div class="ct" style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.45">No NCCPA blueprint alignment view. PACRAT/PAEA/ExamSoft data in 3 separate systems. Monster Grid = triple-digit Excel columns.</div><div class="cross">⬦ Reporting deficit</div><div class="ai-sig">✦ AI: PANCE predictor</div></td>
+                <td><span class="sev-pill sev-c">Critical</span><div class="ct" style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.45">NPS 2/5. No self-serve accreditation reports. PDF unified doc impossible. 95k tickets are PD-level failure.</div><div class="cross">⬦ Reporting deficit</div></td>
+                <td><span class="sev-pill sev-h">High</span><div class="ct" style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.45">7 survey types at Touro run outside Exxat. 8-16% graduate survey response rate. New module is strategic recovery.</div><div class="cross">⬦ Reporting deficit</div><div class="ai-sig">✦ AI: narrative synthesis</div></td>
+                <td><span class="sev-pill sev-m">Medium</span><div class="ct" style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.45">Procedure minimums tracking (3x per type, ARC-PA). "Show me the reds" filter. Overflow/catch-up rotation needed.</div><div class="new-sig">⬦ Procedure minimums (Touro)</div></td>
+                <td><span class="sev-pill sev-m">Medium</span><div class="ct" style="font-size:11px;color:var(--text2);margin-top:5px;line-height:1.45">ARC-PA mandates competency evidence. Gaps only surface at self-study. 9 areas need demonstrable tracking.</div><div class="new-sig">⬦ ARC-PA evidence gap</div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ THEMES ════════════ -->
+    <div class="view" id="view-themes">
+      <div class="section-head">
+        <div><div class="section-title">Theme Clusters</div>
+        <div class="section-sub">Synthesized from 39 Granola sessions + project documents · March 2026</div></div>
+      </div>
+
+      <div class="three-col">
+        <div class="card">
+          <div class="card-title" style="color:var(--accent);">Platform-level · Cognitive overload</div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-platform">3 products</span></div><div class="insight-text">Students in Exam Management (no annotation), FaaS (opaque status), and Skills Checklist (no aggregate view) all carry mental load the platform should absorb. Same underlying problem, three surfaces.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-persona">Student</span></div><div class="insight-text">80-90% of students build external tracking documents. This is the strongest behavioral signal of unmet need across all products.</div></div>
+          <div class="insight-source" style="margin-top:8px;">Sources: Accessibility session · Day 4 Marriott · Student interviews</div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color:var(--teal);">Platform-level · AI opportunity</div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-platform">5 products</span><span class="tag tag-new">New · Granola</span></div><div class="insight-text">Confirmed AI use cases across every product. Touro asked for blueprint-based question creation, remediation personalizer, and PANCE predictor in a single session.</div></div>
+          <div class="insight-item"><div class="insight-meta"></div><div class="insight-text">FaaS: 95% automated compliance approvals. Course Eval: theme extraction from open-ended responses. Skills: smart eval scheduling + graduation risk.</div></div>
+          <div class="insight-source" style="margin-top:8px;">Sources: Exxat&lt;&gt;Touro · Day 5 FaaS · Day 4 Marriott · PRISM Day 1</div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color:var(--amber);">Platform-level · Reporting deficit</div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-platform">3 products</span></div><div class="insight-text">Program Directors cannot self-serve accreditation-ready reports from Exam Management, FaaS, or Course Eval. One missing platform capability: narrative synthesis + structured reporting layer.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-new">New · Granola</span></div><div class="insight-text">Touro Monster Grid = triple-digit Excel columns synthesizing 3 data systems. This is the PD's current workaround. It is a system design indictment.</div></div>
+          <div class="insight-source" style="margin-top:8px;">Sources: PA Dashboard session · Touro ExamSoft · PRISM Day 1</div>
+        </div>
+      </div>
+      <div class="three-col">
+        <div class="card">
+          <div class="card-title" style="color:var(--coral);">Platform-level · Multi-campus fragmentation</div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-platform">3 products</span><span class="tag tag-new">New · Granola</span></div><div class="insight-text">Faculty print questions, email to second campus, re-upload. California campus requires a different ExamSoft version. EKG images via Box. This affects programs with multiple state campuses — est. 30-40% of client base.</div></div>
+          <div class="insight-source" style="margin-top:8px;">Sources: Touro ExamSoft session · Exam platform strategy · Q bank architecture</div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color:#78aaf5;">Product · Standalone skills entity</div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-platform">2 products</span><span class="tag tag-new">New · Granola</span></div><div class="insight-text">Skills must be a student program-level entity. Cannot aggregate cross-placement in current architecture. Blocks SCCE, Student, and Program Director personas simultaneously. Q2–Q4 roadmap confirmed.</div></div>
+          <div class="insight-source" style="margin-top:8px;">Sources: Day 4 Marriott — Skills &amp; LC · Mar 5</div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color:var(--accent);">Product · Power vs casual user split</div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-platform">2 products</span></div><div class="insight-text">Faculty in Exam Management (Bloom's overhead) and DCEs in FaaS (governance complexity) both have a split user base. Progressive disclosure architecture is the cross-product resolution — not two separate designs.</div></div>
+          <div class="insight-source" style="margin-top:8px;">Sources: Exam platform strategy · FaaS strategy session · Touro notes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ ROADMAP ════════════ -->
+    <div class="view" id="view-roadmap">
+      <div class="section-head">
+        <div><div class="section-title">Product Roadmap</div>
+        <div class="section-sub">Synthesized from PRISM Marriott sessions + Granola standup notes · 2026</div></div>
+      </div>
+      <div class="metric-grid">
+        <div class="metric-card"><div class="metric-label">April 17</div><div class="metric-val" style="font-size:16px;">Demo</div><div class="metric-delta delta-neutral">Exam Mgmt: student + admin + faculty</div></div>
+        <div class="metric-card"><div class="metric-label">July 2026</div><div class="metric-val" style="font-size:16px;">UNF Pilot</div><div class="metric-delta delta-neutral">Accessibility V1 must be complete</div></div>
+        <div class="metric-card"><div class="metric-label">Aug 2026</div><div class="metric-val" style="font-size:16px;">Cohere</div><div class="metric-delta delta-neutral">AI features live for conference</div></div>
+        <div class="metric-card"><div class="metric-label">Jan 2027</div><div class="metric-val" style="font-size:16px;">Skills</div><div class="metric-delta delta-neutral">Standalone entity launch</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+        <div class="roadmap-col">
+          <div class="roadmap-phase"><div class="roadmap-phase-label" style="color:var(--accent);">Q1 2026</div>
+            <div class="roadmap-item"><div class="ri-dot" style="background:var(--green)"></div>Exam accessibility V1 design</div>
+            <div class="roadmap-item"><div class="ri-dot" style="background:var(--green)"></div>FaaS Patient Log → Mongo migration</div>
+            <div class="roadmap-item"><div class="ri-dot" style="background:var(--amber)"></div>Preceptor intake form (FaaS)</div>
+            <div class="roadmap-item"><div class="ri-dot" style="background:var(--amber)"></div>Q bank flat tagging architecture</div>
+          </div>
+        </div>
+        <div class="roadmap-col">
+          <div class="roadmap-phase"><div class="roadmap-phase-label" style="color:var(--teal);">Q2 2026</div>
+            <div class="roadmap-item"><div class="ri-dot" style="background:var(--accent)"></div>April 17 demo — all 3 personas</div>
+            <div class="roadmap-item"><div class="ri-dot" style="background:var(--accent)"></div>Course eval module design workshop</div>
+            <div class="roadmap-item"><div class="ri-dot" style="background:var(--accent)"></div>Skills checklist requirements + prototypes</div>
+            <div class="roadmap-item"><div class="ri-dot" style="background:var(--accent)"></div>FaaS capability gap closure</div>
+          </div>
+        </div>
+        <div class="roadmap-col">
+          <div class="roadmap-phase"><div class="roadmap-phase-label" style="color:var(--amber);">Q3 2026</div>
+            <div class="roadmap-item"><div class="ri-dot" style="background:var(--amber)"></div>UNF pilot (July) — accessibility complete</div>
+            <div class="roadmap-item"><div class="ri-dot" style="background:var(--amber)"></div>AI: question gen + Bloom's tagging</div>
+            <div class="roadmap-item"><div class="ri-dot" style="background:var(--amber)"></div>Skills checklist core system dev</div>
+            <div class="roadmap-item"><div class="ri-dot" style="background:var(--amber)"></div>CAS compliance consolidation</div>
+          </div>
+        </div>
+        <div class="roadmap-col">
+          <div class="roadmap-phase"><div class="roadmap-phase-label" style="color:var(--coral);">Q4 2026 + Jan 27</div>
+            <div class="roadmap-item"><div class="ri-dot" style="background:var(--coral)"></div>Cohere (Aug) — AI features demo</div>
+            <div class="roadmap-item"><div class="ri-dot" style="background:var(--coral)"></div>ExamSoft-competitive launch (Nov–Dec)</div>
+            <div class="roadmap-item"><div class="ri-dot" style="background:var(--coral)"></div>Skills advanced features + mobile</div>
+            <div class="roadmap-item"><div class="ri-dot" style="background:var(--coral)"></div>Skills launch Jan 1, 2027</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ PORTFOLIO ════════════ -->
+    <div class="view" id="view-portfolio">
+      <div class="section-head">
+        <div><div class="section-title">Staff Designer Signal Audit</div>
+        <div class="section-sub">Market positioning vs Staff / Principal Product Designer JD benchmarks · March 2026</div></div>
+      </div>
+      <div class="metric-grid">
+        <div class="metric-card"><div class="metric-label">Overall signal</div><div class="metric-val">87</div><div class="metric-delta delta-up">Strong for Staff level</div></div>
+        <div class="metric-card"><div class="metric-label">Products owned</div><div class="metric-val">5</div><div class="metric-delta delta-neutral">Sole designer, enterprise SaaS</div></div>
+        <div class="metric-card"><div class="metric-label">Publications</div><div class="metric-val">3</div><div class="metric-delta delta-up">ACM · IEEE · UXPA</div></div>
+        <div class="metric-card"><div class="metric-label">Portfolio gaps</div><div class="metric-val">2</div><div class="metric-delta delta-dn">Measurable outcomes, case studies</div></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Positioning dimensions</div>
+          <div class="portfolio-row"><div class="port-label">Systems thinking</div><div class="port-bar-wrap"><div class="port-bar" style="width:92%;background:var(--accent)"></div></div><div class="port-score">92</div><div class="port-gap">Strong</div></div>
+          <div class="portfolio-row"><div class="port-label">Cross-product ownership</div><div class="port-bar-wrap"><div class="port-bar" style="width:97%;background:var(--teal)"></div></div><div class="port-score">97</div><div class="port-gap">Exceptional</div></div>
+          <div class="portfolio-row"><div class="port-label">Accessibility leadership</div><div class="port-bar-wrap"><div class="port-bar" style="width:82%;background:var(--amber)"></div></div><div class="port-score">82</div><div class="port-gap">Strong</div></div>
+          <div class="portfolio-row"><div class="port-label">Published research (HCI)</div><div class="port-bar-wrap"><div class="port-bar" style="width:94%;background:var(--accent)"></div></div><div class="port-score">94</div><div class="port-gap">Rare differentiator</div></div>
+          <div class="portfolio-row"><div class="port-label">Measurable outcomes</div><div class="port-bar-wrap"><div class="port-bar" style="width:62%;background:var(--coral)"></div></div><div class="port-score">62</div><div class="port-gap">⚠ Gap — needs case studies</div></div>
+          <div class="portfolio-row"><div class="port-label">Domain expertise (clinical)</div><div class="port-bar-wrap"><div class="port-bar" style="width:96%;background:var(--teal)"></div></div><div class="port-score">96</div><div class="port-gap">Exceptional</div></div>
+          <div class="portfolio-row"><div class="port-label">Stakeholder communication</div><div class="port-bar-wrap"><div class="port-bar" style="width:78%;background:var(--amber)"></div></div><div class="port-score">78</div><div class="port-gap">Good — building evidence</div></div>
+          <div class="portfolio-row"><div class="port-label">AI-product thinking</div><div class="port-bar-wrap"><div class="port-bar" style="width:71%;background:var(--accent)"></div></div><div class="port-score">71</div><div class="port-gap">Growing — Touro sessions help</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Staff-level narrative anchors</div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-theme">Anchor 1</span></div><div class="insight-text">Sole designer with cross-product ownership across 5 enterprise SaaS products serving 170+ accredited healthcare programs.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-theme">Anchor 2</span></div><div class="insight-text">Redesigned FaaS governance framework covering 17,000+ configured forms and 95,000+ annual support tickets (NPS 2/5 baseline).</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-theme">Anchor 3</span></div><div class="insight-text">Published researcher in HCI: Vector Personas framework (ACM SIGDOC 2024) applied directly to enterprise design practice.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-theme">Anchor 4</span></div><div class="insight-text">Deep accreditation domain expertise: CAPTE, ACOTE, CCNE, ARC-PA, CSWE, CAAHEP. Designing for accreditation compliance, not just usability.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-theme">Anchor 5</span></div><div class="insight-text">Founder-level institutional knowledge: original Exxat designer from 2014, returning with graduate research lens. 12-year product context.</div></div>
+          <div class="divider"></div>
+          <div class="brief-label">Priority case studies needed</div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-gap">Gap</span></div><div class="insight-text">FaaS 2.0 governance system: problem scale + design decisions + measurable outcome. Highest-priority case study.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-gap">Gap</span></div><div class="insight-text">Exam accessibility within lockdown constraints: systems thinking under constraint. Staff-level signal.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ STAKEHOLDER DECK ════════════ -->
+    <div class="view" id="view-stakeholder">
+      <div class="section-head">
+        <div><div class="section-title">Stakeholder Deck</div>
+        <div class="section-sub">Executive-ready · Audience: Arun Gautam + Kunal (COO) · March 2026</div></div>
+      </div>
+      <div class="two-col">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div class="brief-section">
+            <div class="brief-label">Slide 1 · The problem</div>
+            <div class="brief-text">Exxat's five clinical education products serve 170+ accredited healthcare programs, but each product carries unresolved friction that compounds at scale. FaaS runs at 95,000 support tickets annually with a 2/5 NPS. Exam Management lacks the accessibility and multi-campus capabilities that competitors already provide. Skills Checklist cannot answer the question every student asks: "have I met my requirements?" These are not isolated product bugs — they are symptoms of missing platform-level architecture.</div>
+          </div>
+          <div class="brief-section">
+            <div class="brief-label">Slide 2 · What we found</div>
+            <div class="brief-text">Across 39 stakeholder sessions (March 2026), six platform-level signals emerged. Three are new: an AI opportunity layer confirmed across all five products, multi-campus fragmentation affecting an estimated 30–40% of the client base, and a standalone skills entity gap that blocks three personas simultaneously. The most urgent near-term finding: Touro runs seven survey types outside Exxat in Blue and Canvas because our survey UX lost their trust. That is recoverable, but only with a dedicated course evaluation module, not a patch.</div>
+          </div>
+          <div class="brief-section highlight">
+            <div class="brief-label">Slide 3 · Recommended direction</div>
+            <div class="brief-text">Three actions with the highest cross-product leverage: (1) Ship the accessibility layer for Exam Management before the UNF pilot in July — this is also the platform's first public commitment to WCAG 2.1 AA compliance. (2) Begin the standalone skills entity architecture in Q2 — every day it delays, the SCCE and student personas remain underserved across two products at once. (3) Run the course evaluation module design workshop in April as planned — this is how Exxat gets back the survey surface it has already lost to competitors.</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Signal summary for leadership</div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-platform">Platform</span></div><div class="insight-text">AI opportunity is confirmed and specific — not speculative. Touro explicitly asked for question gen from blueprint, PANCE predictor, and remediation personalizer. These are buildable in 2026.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-gap">Risk</span></div><div class="insight-text">Course Eval: Touro runs 7 survey types in Blue/Canvas. If we do not ship the dedicated module in 2026, we lose that surface permanently. Standalone vendors charge $5K/year — this is real revenue at risk.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-gap">Risk</span></div><div class="insight-text">ExamSoft launch must include AI features as competitive edge. A launch without AI in Nov–Dec 2026 is "half-baked given the ExamSoft challenge" — Vishaka's framing from the standup.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-opp">Opportunity</span></div><div class="insight-text">Multi-campus sharing is Touro's #1 pain and Exxat's flat tagging architecture directly solves it. This is a named competitive differentiator to lead with in ExamSoft displacement conversations.</div></div>
+          <div class="insight-item"><div class="insight-meta"><span class="tag tag-opp">Opportunity</span></div><div class="insight-text">PA Student Performance Dashboard (Aarti/Vishaka session) is a new product surface not previously scoped. NCCPA blueprint alignment + PANCE predictor + cohort benchmarking = strong retention and expansion signal.</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// ── Navigation ──
+var pages = {
+  overview:    {title:'Overview',      tag:'All Products'},
+  exam:        {title:'Exam Management',tag:'Active · UNF Jul 2026'},
+  faas:        {title:'FaaS 2.0',       tag:'NPS 2/5 · 95k tickets'},
+  eval:        {title:'Course & Faculty Eval', tag:'New Module'},
+  skills:      {title:'Skills Checklist',tag:'Q2–Q4 2026'},
+  lc:          {title:'Learning Contracts', tag:'Scoped'},
+  personas:    {title:'Persona Map',    tag:'6 Platform Signals'},
+  themes:      {title:'Theme Clusters', tag:'39 Granola Sessions'},
+  roadmap:     {title:'Roadmap',        tag:'2026–2027'},
+  portfolio:   {title:'Staff Signal',   tag:'Score: 87'},
+  stakeholder: {title:'Stakeholder Deck', tag:'Arun + Kunal'}
+};
+
+function nav(id, el) {
+  document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+  var v = document.getElementById('view-'+id);
+  if(v) v.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  if(el) {
+    el.classList.add('active');
+  } else {
+    // Auto-activate sidebar item when called without element reference (e.g. from product cards)
+    document.querySelectorAll('.nav-item').forEach(function(n){
+      var oc = n.getAttribute('onclick') || '';
+      if(oc.indexOf("'"+id+"'") !== -1) n.classList.add('active');
+    });
+  }
+  var p = pages[id] || {title:id, tag:''};
+  document.getElementById('page-title').textContent = p.title;
+  document.getElementById('page-tag').textContent = p.tag;
+  if(id==='exam') setTimeout(initExamCharts, 100);
+}
+
+// ── Tab switching ──
+function switchTab(product, tab, el) {
+  var prefix = product+'-';
+  document.querySelectorAll('[id^="'+prefix+'"]').forEach(function(t){ t.style.display='none'; });
+  var target = document.getElementById(prefix+tab);
+  if(target) target.style.display='block';
+  if(el) {
+    el.closest('.tabs').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    el.classList.add('active');
+  }
+  if(tab==='analytics') setTimeout(initExamCharts, 80);
+}
+
+// ── Charts ──
+var chartsInited = false;
+function initExamCharts() {
+  if(chartsInited) return;
+  var sc = document.getElementById('scoreChart');
+  var bc = document.getElementById('bloomChart');
+  var ec = document.getElementById('eorChart');
+  var bk = document.getElementById('bankChart');
+  if(!sc||!bc||!ec||!bk) return;
+  chartsInited = true;
+
+  function xS(){ return {grid:{color:'rgba(255,255,255,0.04)',borderColor:'transparent'},ticks:{color:'#5c5a57',font:{size:10}}}; }
+  function yS(){ return {grid:{color:'rgba(255,255,255,0.04)',borderColor:'transparent'},ticks:{color:'#5c5a57',font:{size:10}}}; }
+  function leg(){ return {display:true,labels:{color:'#9a9690',boxWidth:10,font:{size:10}}}; }
+  function mk(extra){ return {responsive:true,maintainAspectRatio:false,plugins:Object.assign({legend:{display:false}},extra||{}),scales:{x:xS(),y:yS()}}; }
+
+  new Chart(sc,{type:'bar',data:{labels:['50–59','60–69','70–79','80–89','90–100'],datasets:[{label:'Cohort',data:[3,8,22,34,18],backgroundColor:'rgba(139,127,245,0.6)',borderRadius:4},{label:'National',data:[2,6,18,30,22],backgroundColor:'rgba(46,196,160,0.4)',borderRadius:4}]},options:mk({legend:leg()})});
+
+  var bcOpts = {responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:Object.assign(xS(),{min:0,max:1}),y:yS()}};
+  new Chart(bc,{type:'bar',data:{labels:['Remember','Understand','Apply','Analyze','Evaluate','Create'],datasets:[{label:'p-value',data:[0.82,0.74,0.61,0.52,0.45,0.38],backgroundColor:['rgba(76,175,125,0.7)','rgba(76,175,125,0.7)','rgba(245,166,35,0.7)','rgba(245,166,35,0.7)','rgba(232,96,74,0.7)','rgba(232,96,74,0.7)'],borderRadius:4}]},options:bcOpts});
+
+  new Chart(ec,{type:'line',data:{labels:['EOR 1','EOR 2','EOR 3','EOR 4','EOR 5','EOR 6','EOR 7','EOR 8','EOR 9','EOR 10'],datasets:[{label:'Cohort avg',data:[74,71,78,76,80,73,82,77,79,81],borderColor:'#8b7ff5',backgroundColor:'rgba(139,127,245,0.1)',tension:0.4,fill:true,pointBackgroundColor:'#8b7ff5',pointRadius:3},{label:'Benchmark (77%)',data:[77,77,77,77,77,77,77,77,77,77],borderColor:'rgba(232,96,74,0.6)',borderDash:[4,4],pointRadius:0,tension:0}]},options:mk({legend:leg()})});
+
+  new Chart(bk,{type:'line',data:{labels:['Sep','Oct','Nov','Dec','Jan','Feb','Mar'],datasets:[{label:'Total questions',data:[1240,1380,1520,1640,1710,1780,1847],borderColor:'#2ec4a0',backgroundColor:'rgba(46,196,160,0.08)',tension:0.4,fill:true,pointBackgroundColor:'#2ec4a0',pointRadius:3},{label:'Approved',data:[980,1100,1230,1340,1410,1480,1530],borderColor:'rgba(139,127,245,0.7)',tension:0.4,pointRadius:3,pointBackgroundColor:'#8b7ff5'}]},options:mk({legend:leg()})});
+}
+</script>
+</body>
+</html>
